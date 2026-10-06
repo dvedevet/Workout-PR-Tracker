@@ -5,12 +5,14 @@ import viteLogo from './assets/vite.svg'
 import './App.css'
 
 import ExerciseList from "./components/ExerciseList"
+import SessionBoard from "./components/SessionBoard"
 
 function App() {
   return (
     <div>
       <h1>Дневник за тренировки</h1>
       <ExerciseList />
+      <SessionBoard />
     </div>
   )
 }

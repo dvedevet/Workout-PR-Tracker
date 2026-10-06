@@ -7,4 +7,4 @@ function ExerciseCard({ name, muscleGroup }) {
   )
 }
 
-export default ExerciseCard
+export default ExerciseCard 
