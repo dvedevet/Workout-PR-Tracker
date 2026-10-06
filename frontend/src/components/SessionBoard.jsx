@@ -1,29 +1,29 @@
 import { useState } from "react"
-import { Plus, Trash2 } from "lucide-react"
+import { Plus, Trash2, Check } from "lucide-react"
 
-function SessionBoard({ selectedExercise }) {
+function SessionBoard({
+    selectedExercise,
+    sets,
+    onAddSet,
+    onDeleteSet,
+    onFinish,
+}) {
     const [weight, setWeight] = useState("")
     const [reps, setReps] = useState("")
-    const [sets, setSets] = useState([])
 
-    function handleAddSet() {
+    function handleSubmit() {
         if (!selectedExercise || weight === "" || reps === "") return
 
-        const newSet = {
+        onAddSet({
             id: Date.now(),
             exerciseId: selectedExercise.id,
             exerciseName: selectedExercise.name,
             muscleGroup: selectedExercise.muscleGroup,
             weight: Number(weight),
             reps: Number(reps),
-        }
-        setSets([...sets, newSet])
+        })
         setWeight("")
         setReps("")
-    }
-
-    function handleDeleteSet(id) {
-        setSets(sets.filter((set) => set.id !== id))
     }
 
     function getSetNumber(index) {
@@ -64,7 +64,7 @@ function SessionBoard({ selectedExercise }) {
                     className={inputClass}
                 />
                 <button
-                    onClick={handleAddSet}
+                    onClick={handleSubmit}
                     disabled={!selectedExercise}
                     className="col-span-2 flex items-center justify-center gap-1 rounded-xl bg-sky-500 px-4 py-2 font-medium text-white shadow transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-50 sm:col-span-1"
                 >
@@ -90,7 +90,7 @@ function SessionBoard({ selectedExercise }) {
                                     Серия {getSetNumber(index)}
                                 </span>
                                 <span className="rounded-lg bg-sky-50 px-2 py-0.5 font-medium text-sky-800">
-                                    {set.weight} кг.
+                                    {set.weight} кг
                                 </span>
                                 <span className="rounded-lg bg-sky-50 px-2 py-0.5 font-medium text-sky-800">
                                     {set.reps} повт.
@@ -98,7 +98,7 @@ function SessionBoard({ selectedExercise }) {
                             </div>
                         </div>
                         <button
-                            onClick={() => handleDeleteSet(set.id)}
+                            onClick={() => onDeleteSet(set.id)}
                             className="shrink-0 rounded-lg p-1.5 text-sky-400 transition hover:bg-sky-100 hover:text-red-400"
                         >
                             <Trash2 size={18} />
@@ -106,6 +106,15 @@ function SessionBoard({ selectedExercise }) {
                     </li>
                 ))}
             </ul>
+
+            {sets.length > 0 && (
+                <button
+                    onClick={onFinish}
+                    className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-sky-600 px-4 py-2.5 font-medium text-white shadow transition hover:bg-sky-700"
+                >
+                    <Check size={18} /> Завърши тренировката
+                </button>
+            )}
         </section>
     )
 }

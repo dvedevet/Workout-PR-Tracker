@@ -3,6 +3,7 @@ import { Dumbbell, History as HistoryIcon } from "lucide-react"
 import ExerciseList from "./components/ExerciseList"
 import SessionBoard from "./components/SessionBoard"
 import HistoryView from "./components/HistoryView"
+import { history as initialHistory } from "./data/history"
 
 const tabs = [
   { id: "workout", label: "Тренировка", icon: Dumbbell },
@@ -12,10 +13,48 @@ const tabs = [
 function App() {
   const [selectedExercise, setSelectedExercise] = useState(null)
   const [view, setView] = useState("workout")
+  const [sets, setSets] = useState([])
+  const [history, setHistory] = useState(initialHistory)
 
   function handleBackgroundClick(e) {
     if (e.target.closest("button, input, h1, h2, h3, p, span, li")) return
     setSelectedExercise(null)
+  }
+
+  function handleAddSet(newSet) {
+    setSets([...sets, newSet])
+  }
+
+  function handleDeleteSet(id) {
+    setSets(sets.filter((set) => set.id !== id))
+  }
+
+  function handleFinishWorkout() {
+    if (sets.length === 0) return
+
+    const exercises = []
+    sets.forEach((set) => {
+      let group = exercises.find((item) => item.exerciseId === set.exerciseId)
+      if (!group) {
+        group = {
+          exerciseId: set.exerciseId,
+          name: set.exerciseName,
+          muscleGroup: set.muscleGroup,
+          sets: [],
+        }
+        exercises.push(group)
+      }
+      group.sets.push({ weight: set.weight, reps: set.reps })
+    })
+
+    const workout = {
+      id: Date.now(),
+      date: new Date().toLocaleDateString("sv-SE"),
+      exercises: exercises,
+    }
+
+    setHistory([workout, ...history])
+    setSets([])
   }
 
   return (
@@ -43,18 +82,23 @@ function App() {
           })}
         </nav>
 
-        <div
-          className={`grid items-start gap-6 lg:grid-cols-2 ${view === "workout" ? "" : "hidden"
-            }`}
-        >
-          <ExerciseList
-            selectedExercise={selectedExercise}
-            onSelect={setSelectedExercise}
-          />
-          <SessionBoard selectedExercise={selectedExercise} />
-        </div>
+        {view === "workout" && (
+          <div className="grid items-start gap-6 lg:grid-cols-2">
+            <ExerciseList
+              selectedExercise={selectedExercise}
+              onSelect={setSelectedExercise}
+            />
+            <SessionBoard
+              selectedExercise={selectedExercise}
+              sets={sets}
+              onAddSet={handleAddSet}
+              onDeleteSet={handleDeleteSet}
+              onFinish={handleFinishWorkout}
+            />
+          </div>
+        )}
 
-        {view === "history" && <HistoryView />}
+        {view === "history" && <HistoryView history={history} />}
       </div>
     </div>
   )
