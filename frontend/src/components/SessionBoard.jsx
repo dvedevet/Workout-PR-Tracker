@@ -1,9 +1,11 @@
 import { useState } from "react"
-import { Plus, Trash2, Check } from "lucide-react"
+import { Plus, Trash2, Check, Trophy } from "lucide-react"
+import { getHistorySets, getPRType } from "../utils/stats"
 
 function SessionBoard({
     selectedExercise,
     sets,
+    history,
     onAddSet,
     onDeleteSet,
     onFinish,
@@ -73,38 +75,54 @@ function SessionBoard({
             </div>
 
             <ul className="grid gap-2">
-                {sets.map((set, index) => (
-                    <li
-                        key={set.id}
-                        className="flex items-center justify-between gap-3 rounded-xl bg-white/80 px-4 py-3 shadow-sm"
-                    >
-                        <div className="min-w-0">
-                            <div className="flex flex-wrap items-center gap-2">
-                                <p className="font-semibold text-sky-800">{set.exerciseName}</p>
-                                <span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-700">
-                                    {set.muscleGroup}
-                                </span>
-                            </div>
-                            <div className="mt-2 flex flex-wrap gap-1.5 text-sm">
-                                <span className="rounded-lg bg-slate-100 px-2 py-0.5 text-slate-600">
-                                    Серия {getSetNumber(index)}
-                                </span>
-                                <span className="rounded-lg bg-sky-50 px-2 py-0.5 font-medium text-sky-800">
-                                    {set.weight} кг
-                                </span>
-                                <span className="rounded-lg bg-sky-50 px-2 py-0.5 font-medium text-sky-800">
-                                    {set.reps} повт.
-                                </span>
-                            </div>
-                        </div>
-                        <button
-                            onClick={() => onDeleteSet(set.id)}
-                            className="shrink-0 rounded-lg p-1.5 text-sky-400 transition hover:bg-sky-100 hover:text-red-400"
+                {sets.map((set, index) => {
+                    const previousSets = [
+                        ...getHistorySets(history, set.exerciseId),
+                        ...sets
+                            .slice(0, index)
+                            .filter((earlier) => earlier.exerciseId === set.exerciseId),
+                    ]
+                    const prType = getPRType(set, previousSets)
+
+                    return (
+                        <li
+                            key={set.id}
+                            className="flex items-center justify-between gap-3 rounded-xl bg-white/80 px-4 py-3 shadow-sm"
                         >
-                            <Trash2 size={18} />
-                        </button>
-                    </li>
-                ))}
+                            <div className="min-w-0">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <p className="font-semibold text-sky-800">{set.exerciseName}</p>
+                                    <span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-700">
+                                        {set.muscleGroup}
+                                    </span>
+                                    {prType && (
+                                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-700">
+                                            <Trophy size={12} />
+                                            NEW PR · {prType === "1RM" ? "1RM" : "повт."}
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="mt-2 flex flex-wrap gap-1.5 text-sm">
+                                    <span className="rounded-lg bg-slate-100 px-2 py-0.5 text-slate-600">
+                                        Серия {getSetNumber(index)}
+                                    </span>
+                                    <span className="rounded-lg bg-sky-50 px-2 py-0.5 font-medium text-sky-800">
+                                        {set.weight} кг
+                                    </span>
+                                    <span className="rounded-lg bg-sky-50 px-2 py-0.5 font-medium text-sky-800">
+                                        {set.reps} повт.
+                                    </span>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => onDeleteSet(set.id)}
+                                className="shrink-0 rounded-lg p-1.5 text-sky-400 transition hover:bg-sky-100 hover:text-red-400"
+                            >
+                                <Trash2 size={18} />
+                            </button>
+                        </li>
+                    )
+                })}
             </ul>
 
             {sets.length > 0 && (

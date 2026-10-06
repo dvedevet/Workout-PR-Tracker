@@ -1,5 +1,6 @@
 import { useState } from "react"
-import { Dumbbell, History as HistoryIcon } from "lucide-react"
+import { Dumbbell, History as HistoryIcon, TrendingUp } from "lucide-react"
+import ProgressView from "./components/ProgressView"
 import ExerciseList from "./components/ExerciseList"
 import SessionBoard from "./components/SessionBoard"
 import HistoryView from "./components/HistoryView"
@@ -8,6 +9,7 @@ import { history as initialHistory } from "./data/history"
 const tabs = [
   { id: "workout", label: "Тренировка", icon: Dumbbell },
   { id: "history", label: "История", icon: HistoryIcon },
+  { id: "progress", label: "Прогрес", icon: TrendingUp },
 ]
 
 function App() {
@@ -72,8 +74,8 @@ function App() {
                 key={tab.id}
                 onClick={() => setView(tab.id)}
                 className={`flex items-center gap-2 rounded-full px-5 py-2 text-sm font-medium transition ${view === tab.id
-                    ? "bg-sky-500 text-white shadow"
-                    : "bg-white/70 text-sky-700 hover:bg-sky-100"
+                  ? "bg-sky-500 text-white shadow"
+                  : "bg-white/70 text-sky-700 hover:bg-sky-100"
                   }`}
               >
                 <Icon size={18} /> {tab.label}
@@ -88,9 +90,10 @@ function App() {
               selectedExercise={selectedExercise}
               onSelect={setSelectedExercise}
             />
-            <SessionBoard
+             <SessionBoard
               selectedExercise={selectedExercise}
               sets={sets}
+              history={history}
               onAddSet={handleAddSet}
               onDeleteSet={handleDeleteSet}
               onFinish={handleFinishWorkout}
@@ -99,6 +102,8 @@ function App() {
         )}
 
         {view === "history" && <HistoryView history={history} />}
+        {view === "progress" && <ProgressView history={history} />}
+
       </div>
     </div>
   )
