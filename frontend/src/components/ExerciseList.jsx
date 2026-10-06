@@ -4,7 +4,7 @@ import ExerciseCard from "./ExerciseCard"
 import { exercises } from "../data/exercises"
 
 const groups = ["Всички", "Гърди", "Гръб", "Крака", "Рамене", "Ръце"]
-const PAGE_SIZE = 5
+const PAGE_SIZE = 3
 
 function ExerciseList({ selectedExercise, onSelect }) {
     const [activeGroup, setActiveGroup] = useState("Всички")
