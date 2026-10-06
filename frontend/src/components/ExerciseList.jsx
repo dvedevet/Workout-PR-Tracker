@@ -1,7 +1,7 @@
 import ExerciseCard from "./ExerciseCard"
 import { exercises } from "../data/exercises"
 
-function ExerciseList() {
+function ExerciseList({ selectedExercise, onSelect }) {
   return (
     <div>
       <h2>Упражнения</h2>
@@ -10,6 +10,8 @@ function ExerciseList() {
           key={exercise.id}
           name={exercise.name}
           muscleGroup={exercise.muscleGroup}
+          isSelected={selectedExercise?.id === exercise.id}
+          onSelect={() => onSelect(exercise)}
         />
       ))}
     </div>

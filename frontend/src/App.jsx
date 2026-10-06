@@ -8,11 +8,16 @@ import ExerciseList from "./components/ExerciseList"
 import SessionBoard from "./components/SessionBoard"
 
 function App() {
+  const [selectedExercise, setSelectedExercise] = useState(null)
+
   return (
     <div>
       <h1>Дневник за тренировки</h1>
-      <ExerciseList />
-      <SessionBoard />
+      <ExerciseList
+        selectedExercise={selectedExercise}
+        onSelect={setSelectedExercise}
+      />
+      <SessionBoard selectedExercise={selectedExercise} />
     </div>
   )
 }
