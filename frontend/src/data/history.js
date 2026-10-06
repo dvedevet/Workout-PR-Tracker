@@ -4,6 +4,7 @@ export const history = [
     date: "2026-09-22",
     exercises: [
       {
+        exerciseId: 1,
         name: "Лежанка",
         muscleGroup: "Гърди",
         sets: [
@@ -12,6 +13,7 @@ export const history = [
         ],
       },
       {
+        exerciseId: 2,
         name: "Набиране",
         muscleGroup: "Гръб",
         sets: [{ weight: 0, reps: 10 }],
@@ -23,6 +25,7 @@ export const history = [
     date: "2026-09-25",
     exercises: [
       {
+        exerciseId: 3,
         name: "Клек",
         muscleGroup: "Крака",
         sets: [
@@ -37,6 +40,7 @@ export const history = [
     date: "2026-09-29",
     exercises: [
       {
+        exerciseId: 1,
         name: "Лежанка",
         muscleGroup: "Гърди",
         sets: [
