@@ -30,13 +30,47 @@ function ChartTooltip({ active, payload, metric }) {
     return (
         <div className="rounded-xl border border-sky-100 bg-white/95 px-3 py-2 text-sm shadow-lg">
             <p className="font-semibold text-sky-900">{point.label}</p>
-            {metric === "oneRM" ? (
+            {metric === "oneRM" && (
                 <p className="text-sky-700">Прогнозен 1RM: {point.oneRM} кг.</p>
-            ) : (
+            )}
+            {metric === "maxWeight" && (
                 <p className="text-sky-700">
                     Тежест: {point.maxWeight} кг. | Повторения: {point.maxWeightReps}
                 </p>
             )}
+            {metric === "maxReps" && (
+                <p className="text-sky-700">Повторения: {point.maxReps}</p>
+            )}
+        </div>
+    )
+}
+
+function ProgressChart({ data, dataKey, name }) {
+    return (
+        <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+                <LineChart
+                    data={data}
+                    margin={{ top: 8, right: 12, bottom: 0, left: -12 }}
+                >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#bae6fd" />
+                    <XAxis dataKey="label" stroke="#0284c7" fontSize={12} />
+                    <YAxis
+                        stroke="#0284c7"
+                        fontSize={12}
+                        allowDecimals={dataKey !== "maxReps"}
+                    />
+                    <Tooltip content={<ChartTooltip metric={dataKey} />} />
+                    <Line
+                        type="monotone"
+                        dataKey={dataKey}
+                        name={name}
+                        stroke="#0ea5e9"
+                        strokeWidth={3}
+                        dot={{ r: 4 }}
+                    />
+                </LineChart>
+            </ResponsiveContainer>
         </div>
     )
 }
@@ -73,6 +107,7 @@ function ProgressView({ history }) {
 
     const bestOneRM = Math.max(...points.map((point) => point.oneRM))
     const maxWeight = Math.max(...points.map((point) => point.maxWeight))
+    const maxReps = Math.max(...points.map((point) => point.maxReps))
 
     const stats = [
         { label: "Макс. тежест", value: `${maxWeight} кг` },
@@ -137,32 +172,30 @@ function ProgressView({ history }) {
                         ))}
                     </div>
 
-                    <div className="h-64 w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <LineChart
-                                data={chartData}
-                                margin={{ top: 8, right: 12, bottom: 0, left: -12 }}
-                            >
-                                <CartesianGrid strokeDasharray="3 3" stroke="#bae6fd" />
-                                <XAxis dataKey="label" stroke="#0284c7" fontSize={12} />
-                                <YAxis stroke="#0284c7" fontSize={12} />
-                                <Tooltip content={<ChartTooltip metric={metric} />} />
-                                <Line
-                                    type="monotone"
-                                    dataKey={metric}
-                                    name={activeMetric.label}
-                                    stroke="#0ea5e9"
-                                    strokeWidth={3}
-                                    dot={{ r: 4 }}
-                                />
-                            </LineChart>
-                        </ResponsiveContainer>
-                    </div>
+                    <ProgressChart
+                        data={chartData}
+                        dataKey={metric}
+                        name={activeMetric.label}
+                    />
                 </>
             ) : (
-                <p className="rounded-2xl bg-white/80 p-4 text-sm text-sky-700 shadow-sm">
-                    Това упражнение е без тежест, затова няма прогрес по килограми.
-                </p>
+                <>
+                    <div className="mb-2 rounded-2xl bg-white/80 p-3 text-center shadow-sm">
+                        <p className="text-xs text-slate-500">Макс. повторения</p>
+                        <p className="mt-1 font-bold text-sky-800">{maxReps} повт.</p>
+                    </div>
+
+                    <p className="mb-4 text-xs text-slate-500">
+                        Упражнението е без тежест, затова следим най-многото повторения в
+                        една серия от тренировка.
+                    </p>
+
+                    <ProgressChart
+                        data={chartData}
+                        dataKey="maxReps"
+                        name="Макс. повторения"
+                    />
+                </>
             )}
         </section>
     )

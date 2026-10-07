@@ -22,9 +22,9 @@ export function getHistorySets(history, exerciseId) {
     return result
 }
 
-// По една точка за всяка тренировка: най-доброто от нея, по дати
+// По една точка за всеки ден: най-доброто от тренировките през този ден
 export function getExerciseProgress(history, exerciseId) {
-    return history
+    const points = history
         .map((workout) => {
             const entry = workout.exercises.find(
                 (exercise) => exercise.exerciseId === exerciseId
@@ -45,10 +45,34 @@ export function getExerciseProgress(history, exerciseId) {
                 ),
                 maxWeight: maxWeight,
                 maxWeightReps: maxWeightReps,
+                maxReps: Math.max(...entry.sets.map((set) => set.reps)),
             }
         })
         .filter(Boolean)
-        .sort((a, b) => a.date.localeCompare(b.date))
+
+    // Тренировки в един и същи ден се обединяват в една точка
+    const byDate = {}
+    points.forEach((point) => {
+        const existing = byDate[point.date]
+        if (!existing) {
+            byDate[point.date] = { ...point }
+            return
+        }
+
+        existing.oneRM = Math.max(existing.oneRM, point.oneRM)
+        existing.maxReps = Math.max(existing.maxReps, point.maxReps)
+
+        const heavier = point.maxWeight > existing.maxWeight
+        const sameWeightMoreReps =
+            point.maxWeight === existing.maxWeight &&
+            point.maxWeightReps > existing.maxWeightReps
+        if (heavier || sameWeightMoreReps) {
+            existing.maxWeight = point.maxWeight
+            existing.maxWeightReps = point.maxWeightReps
+        }
+    })
+
+    return Object.values(byDate).sort((a, b) => a.date.localeCompare(b.date))
 }
 
 // Дали една серия е рекорд спрямо предишните серии на упражнението.
