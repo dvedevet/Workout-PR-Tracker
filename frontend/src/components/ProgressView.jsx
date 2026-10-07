@@ -13,7 +13,7 @@ import { getExerciseProgress } from "../utils/stats"
 
 const metrics = [
     { id: "oneRM", label: "Прогнозен 1RM" },
-    { id: "maxReps", label: "Макс. повторения" },
+    { id: "maxWeight", label: "Макс. тежест" },
 ]
 
 function shortDate(isoDate) {
@@ -31,11 +31,10 @@ function ChartTooltip({ active, payload, metric }) {
         <div className="rounded-xl border border-sky-100 bg-white/95 px-3 py-2 text-sm shadow-lg">
             <p className="font-semibold text-sky-900">{point.label}</p>
             {metric === "oneRM" ? (
-                <p className="text-sky-700">Прогнозен 1RM: {point.oneRM} кг</p>
+                <p className="text-sky-700">Прогнозен 1RM: {point.oneRM} кг.</p>
             ) : (
                 <p className="text-sky-700">
-                    {point.maxReps} повт.{" "}
-                    {point.repsWeight > 0 ? `/ ${point.repsWeight} кг.` : "без тежест"}
+                    Тежест: {point.maxWeight} кг. | Повторения: {point.maxWeightReps}
                 </p>
             )}
         </div>
@@ -65,6 +64,7 @@ function ProgressView({ history }) {
 
     const activeId = selectedId ?? trained[0].exerciseId
     const points = getExerciseProgress(history, activeId)
+    const hasWeight = points.some((point) => point.maxWeight > 0)
     const chartData = points.map((point) => ({
         ...point,
         label: shortDate(point.date),
@@ -102,60 +102,68 @@ function ProgressView({ history }) {
                 </div>
             </div>
 
-            <div className="mb-2 grid grid-cols-2 gap-2">
-                {stats.map((stat) => (
-                    <div
-                        key={stat.label}
-                        className="rounded-2xl bg-white/80 p-3 text-center shadow-sm"
-                    >
-                        <p className="text-xs text-slate-500">{stat.label}</p>
-                        <p className="mt-1 font-bold text-sky-800">{stat.value}</p>
+            {hasWeight ? (
+                <>
+                    <div className="mb-2 grid grid-cols-2 gap-2">
+                        {stats.map((stat) => (
+                            <div
+                                key={stat.label}
+                                className="rounded-2xl bg-white/80 p-3 text-center shadow-sm"
+                            >
+                                <p className="text-xs text-slate-500">{stat.label}</p>
+                                <p className="mt-1 font-bold text-sky-800">{stat.value}</p>
+                            </div>
+                        ))}
                     </div>
-                ))}
-            </div>
 
-            <p className="mb-4 text-xs text-slate-500">
-                <span className="font-semibold text-sky-700">1RM</span> (one-rep max) е
-                най-голямата тежест, която можеш да вдигнеш за едно повторение. Тук е
-                изчислена по формулата на Epley: <span className="font-semibold text-sky-700">тежест × (1 + повторения / 30).</span>
-            </p>
+                    <p className="mb-4 text-xs text-slate-500">
+                        <span className="font-semibold text-sky-700">1RM</span> (one-rep max) е
+                        най-голямата тежест, която можеш да вдигнеш за едно повторение. Тук е
+                        изчислена по формулата на Epley: <span className="font-semibold text-sky-700">тежест × (1 + повторения / 30).</span>
+                    </p>
 
-            <div className="mb-3 flex flex-wrap gap-2">
-                {metrics.map((item) => (
-                    <button
-                        key={item.id}
-                        onClick={() => setMetric(item.id)}
-                        className={`rounded-full px-3 py-1 text-sm font-medium transition ${metric === item.id
-                                ? "bg-sky-500 text-white shadow"
-                                : "bg-white/80 text-sky-700 hover:bg-sky-100"
-                            }`}
-                    >
-                        {item.label}
-                    </button>
-                ))}
-            </div>
+                    <div className="mb-3 flex flex-wrap gap-2">
+                        {metrics.map((item) => (
+                            <button
+                                key={item.id}
+                                onClick={() => setMetric(item.id)}
+                                className={`rounded-full px-3 py-1 text-sm font-medium transition ${metric === item.id
+                                    ? "bg-sky-500 text-white shadow"
+                                    : "bg-white/80 text-sky-700 hover:bg-sky-100"
+                                    }`}
+                            >
+                                {item.label}
+                            </button>
+                        ))}
+                    </div>
 
-            <div className="h-64 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                    <LineChart
-                        data={chartData}
-                        margin={{ top: 8, right: 12, bottom: 0, left: -12 }}
-                    >
-                        <CartesianGrid strokeDasharray="3 3" stroke="#bae6fd" />
-                        <XAxis dataKey="label" stroke="#0284c7" fontSize={12} />
-                        <YAxis stroke="#0284c7" fontSize={12} />
-                        <Tooltip content={<ChartTooltip metric={metric} />} />
-                        <Line
-                            type="monotone"
-                            dataKey={metric}
-                            name={activeMetric.label}
-                            stroke="#0ea5e9"
-                            strokeWidth={3}
-                            dot={{ r: 4 }}
-                        />
-                    </LineChart>
-                </ResponsiveContainer>
-            </div>
+                    <div className="h-64 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <LineChart
+                                data={chartData}
+                                margin={{ top: 8, right: 12, bottom: 0, left: -12 }}
+                            >
+                                <CartesianGrid strokeDasharray="3 3" stroke="#bae6fd" />
+                                <XAxis dataKey="label" stroke="#0284c7" fontSize={12} />
+                                <YAxis stroke="#0284c7" fontSize={12} />
+                                <Tooltip content={<ChartTooltip metric={metric} />} />
+                                <Line
+                                    type="monotone"
+                                    dataKey={metric}
+                                    name={activeMetric.label}
+                                    stroke="#0ea5e9"
+                                    strokeWidth={3}
+                                    dot={{ r: 4 }}
+                                />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    </div>
+                </>
+            ) : (
+                <p className="rounded-2xl bg-white/80 p-4 text-sm text-sky-700 shadow-sm">
+                    Това упражнение е без тежест, затова няма прогрес по килограми.
+                </p>
+            )}
         </section>
     )
 }

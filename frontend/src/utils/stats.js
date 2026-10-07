@@ -31,10 +31,11 @@ export function getExerciseProgress(history, exerciseId) {
             )
             if (!entry) return null
 
-            const repsSet = entry.sets.reduce((best, set) =>
-                set.reps > best.reps || (set.reps === best.reps && set.weight > best.weight)
-                    ? set
-                    : best
+            const maxWeight = Math.max(...entry.sets.map((set) => set.weight))
+            const maxWeightReps = Math.max(
+                ...entry.sets
+                    .filter((set) => set.weight === maxWeight)
+                    .map((set) => set.reps)
             )
 
             return {
@@ -42,31 +43,83 @@ export function getExerciseProgress(history, exerciseId) {
                 oneRM: round1(
                     Math.max(...entry.sets.map((set) => epley1RM(set.weight, set.reps)))
                 ),
-                maxReps: repsSet.reps,
-                repsWeight: repsSet.weight,
-                maxWeight: Math.max(...entry.sets.map((set) => set.weight)),
+                maxWeight: maxWeight,
+                maxWeightReps: maxWeightReps,
             }
         })
         .filter(Boolean)
         .sort((a, b) => a.date.localeCompare(b.date))
 }
 
-// Дали една серия е рекорд спрямо предишните серии на упражнението
-export function getPRType(set, previousSets) {
-    if (previousSets.length === 0) return null
+// Дали една серия е рекорд спрямо предишните серии на упражнението.
+// Връща "1RM", "weight", "reps" или null (по приоритет в този ред).
+// Какви рекорди постига една серия спрямо предишните серии на упражнението.
+// Връща списък с "1RM", "weight" и/или "reps" (може да е празен).
+export function getPRTypes(set, previousSets) {
+    if (previousSets.length === 0) return []
 
+    const types = []
+
+    // 1. Нов прогнозен 1RM
     const bestOneRM = Math.max(
         ...previousSets.map((prev) => epley1RM(prev.weight, prev.reps))
     )
-    if (epley1RM(set.weight, set.reps) > bestOneRM) return "1RM"
+    if (epley1RM(set.weight, set.reps) > bestOneRM) types.push("1RM")
 
-    const sameWeight = previousSets.filter((prev) => prev.weight === set.weight)
+    // 2. Тежест: по-тежко от всякога, или най-тежката досега с повече повторения
+    const heaviest = Math.max(...previousSets.map((prev) => prev.weight))
+    const repsAtHeaviest = Math.max(
+        ...previousSets
+            .filter((prev) => prev.weight === heaviest)
+            .map((prev) => prev.reps)
+    )
     if (
-        sameWeight.length > 0 &&
-        set.reps > Math.max(...sameWeight.map((prev) => prev.reps))
+        set.weight > 0 &&
+        (set.weight > heaviest ||
+            (set.weight === heaviest && set.reps > repsAtHeaviest))
     ) {
-        return "reps"
+        types.push("weight")
     }
 
-    return null
+    // 3. Повторения: само ако не е вече рекорд за 1RM или тежест
+    if (types.length === 0) {
+        const beaten = previousSets.some(
+            (prev) => prev.weight >= set.weight && prev.reps >= set.reps
+        )
+        if (!beaten) types.push("reps")
+    }
+
+    return types
+}
+
+// PR баджове за всяка серия от текущата тренировка.
+// Ако по-късна серия на същото упражнение подобри рекорд от същия вид,
+// този вид се маха от по-старата серия.
+export function getSessionPRs(history, sets) {
+    const allTypes = sets.map((set, index) => {
+        const previousSets = [
+            ...getHistorySets(history, set.exerciseId),
+            ...sets
+                .slice(0, index)
+                .filter((earlier) => earlier.exerciseId === set.exerciseId),
+        ]
+        return getPRTypes(set, previousSets)
+    })
+
+    return allTypes.map((types, index) => {
+        const set = sets[index]
+
+        return types.filter((type) => {
+            const isReplaced = sets.some((later, laterIndex) => {
+                if (laterIndex <= index) return false
+                if (later.exerciseId !== set.exerciseId) return false
+                if (!allTypes[laterIndex].includes(type)) return false
+                if (type === "reps") {
+                    return later.weight >= set.weight && later.reps >= set.reps
+                }
+                return true
+            })
+            return !isReplaced
+        })
+    })
 }

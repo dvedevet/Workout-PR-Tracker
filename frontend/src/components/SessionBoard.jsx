@@ -1,6 +1,8 @@
 import { useState } from "react"
 import { Plus, Trash2, Check, Trophy } from "lucide-react"
-import { getHistorySets, getPRType } from "../utils/stats"
+import { getSessionPRs } from "../utils/stats"
+
+const prLabels = { "1RM": "1RM", weight: "тежест", reps: "повт." }
 
 function SessionBoard({
     selectedExercise,
@@ -39,6 +41,8 @@ function SessionBoard({
     const inputClass =
         "min-w-0 w-full rounded-xl border border-sky-200 bg-white/80 px-3 py-2 outline-none focus:ring-2 focus:ring-sky-300"
 
+    const prTypes = getSessionPRs(history, sets)
+
     return (
         <section className="rounded-3xl border border-white/60 bg-white/60 p-6 shadow-lg backdrop-blur-md">
             <h2 className="mb-1 text-xl font-bold text-sky-900">Текуща тренировка</h2>
@@ -51,7 +55,7 @@ function SessionBoard({
             <div className="mb-4 grid grid-cols-2 gap-2 sm:flex">
                 <input
                     type="number"
-                    inputMode="numeric"
+                    inputMode="decimal"
                     placeholder="Тежест (кг)"
                     value={weight}
                     onChange={(e) => setWeight(e.target.value)}
@@ -76,13 +80,7 @@ function SessionBoard({
 
             <ul className="grid gap-2">
                 {sets.map((set, index) => {
-                    const previousSets = [
-                        ...getHistorySets(history, set.exerciseId),
-                        ...sets
-                            .slice(0, index)
-                            .filter((earlier) => earlier.exerciseId === set.exerciseId),
-                    ]
-                    const prType = getPRType(set, previousSets)
+                    const setPRs = prTypes[index]
 
                     return (
                         <li
@@ -95,10 +93,10 @@ function SessionBoard({
                                     <span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-700">
                                         {set.muscleGroup}
                                     </span>
-                                    {prType && (
+                                    {setPRs.length > 0 && (
                                         <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-700">
                                             <Trophy size={12} />
-                                            NEW PR · {prType === "1RM" ? "1RM" : "повт."}
+                                            NEW PR · {setPRs.map((type) => prLabels[type]).join(" + ")}
                                         </span>
                                     )}
                                 </div>
