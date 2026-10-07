@@ -117,7 +117,7 @@ function ProgressView({ history }) {
             <p className="mb-4 text-xs text-slate-500">
                 <span className="font-semibold text-sky-700">1RM</span> (one-rep max) е
                 най-голямата тежест, която можеш да вдигнеш за едно повторение. Тук е
-                изчислена по формулата на Epley: тежест × (1 + повторения / 30).
+                изчислена по формулата на Epley: <span className="font-semibold text-sky-700">тежест × (1 + повторения / 30).</span>
             </p>
 
             <div className="mb-3 flex flex-wrap gap-2">
