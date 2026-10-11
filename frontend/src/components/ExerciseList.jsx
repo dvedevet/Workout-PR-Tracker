@@ -1,14 +1,26 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import ExerciseCard from "./ExerciseCard"
-import { exercises } from "../data/exercises"
+import { getExercises } from "../api"
 
 const groups = ["Всички", "Гърди", "Гръб", "Крака", "Рамене", "Ръце"]
 const PAGE_SIZE = 3
 
 function ExerciseList({ selectedExercise, onSelect }) {
+    const [exercises, setExercises] = useState([])
+    const [isLoading, setIsLoading] = useState(true)
+    const [error, setError] = useState(null)
     const [activeGroup, setActiveGroup] = useState("Всички")
     const [page, setPage] = useState(0)
+
+    useEffect(() => {
+        getExercises()
+            .then((data) => setExercises(data))
+            .catch(() =>
+                setError("Упражненията не могат да се заредят. Работи ли API-то?")
+            )
+            .finally(() => setIsLoading(false))
+    }, [])
 
     const filteredExercises =
         activeGroup === "Всички"
@@ -43,17 +55,27 @@ function ExerciseList({ selectedExercise, onSelect }) {
                 ))}
             </div>
 
-            <div className="grid gap-3">
-                {visibleExercises.map((exercise) => (
-                    <ExerciseCard
-                        key={exercise.id}
-                        name={exercise.name}
-                        muscleGroup={exercise.muscleGroup}
-                        isSelected={selectedExercise?.id === exercise.id}
-                        onSelect={() => onSelect(exercise)}
-                    />
-                ))}
-            </div>
+            {isLoading && (
+                <p className="py-6 text-center text-sm text-sky-600">Зареждане...</p>
+            )}
+
+            {error && (
+                <p className="py-6 text-center text-sm text-red-500">{error}</p>
+            )}
+
+            {!isLoading && !error && (
+                <div className="grid gap-3">
+                    {visibleExercises.map((exercise) => (
+                        <ExerciseCard
+                            key={exercise.id}
+                            name={exercise.name}
+                            muscleGroup={exercise.muscleGroup}
+                            isSelected={selectedExercise?.id === exercise.id}
+                            onSelect={() => onSelect(exercise)}
+                        />
+                    ))}
+                </div>
+            )}
 
             {totalPages > 1 && (
                 <div className="mt-4 flex items-center justify-between">
