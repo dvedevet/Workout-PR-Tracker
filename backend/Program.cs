@@ -1,3 +1,5 @@
+using Npgsql;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddCors(options =>
@@ -8,41 +10,34 @@ builder.Services.AddCors(options =>
               .AllowAnyMethod());
 });
 
+var connectionString = builder.Configuration.GetConnectionString("Supabase")
+    ?? throw new InvalidOperationException(
+        "Липсва connection string 'Supabase'. Задай го с dotnet user-secrets.");
+
+builder.Services.AddSingleton(NpgsqlDataSource.Create(connectionString));
+
 var app = builder.Build();
 
 app.UseCors("Frontend");
 
-var exercises = new List<Exercise>
+app.MapGet("/api/exercises", async (NpgsqlDataSource dataSource) =>
 {
-    new(1, "Лежанка", "Гърди"),
-    new(2, "Набиране", "Гръб"),
-    new(3, "Клек", "Крака"),
-    new(4, "Раменна преса", "Рамене"),
-    new(5, "Бицепсово сгъване", "Ръце"),
-    new(6, "Разтваряне с дъмбели", "Гърди"),
-    new(7, "Гребане", "Гръб"),
-    new(8, "Мъртва тяга", "Крака"),
-    new(9, "Трицепсово разгъване", "Ръце"),
-    new(10, "Лежанка на наклонена пейка", "Гърди"),
-    new(11, "Кофички", "Гърди"),
-    new(12, "Лицеви опори", "Гърди"),
-    new(13, "Вертикална макара", "Гръб"),
-    new(14, "Гребане с дъмбел", "Гръб"),
-    new(15, "Шраг", "Гръб"),
-    new(16, "Преса за крака", "Крака"),
-    new(17, "Напади", "Крака"),
-    new(18, "Румънска мъртва тяга", "Крака"),
-    new(19, "Сгъване за задно бедро", "Крака"),
-    new(20, "Повдигане встрани", "Рамене"),
-    new(21, "Военна преса", "Рамене"),
-    new(22, "Face pull", "Рамене"),
-    new(23, "Задно рамо с дъмбели", "Рамене"),
-    new(24, "Чук сгъване", "Ръце"),
-    new(25, "Френска преса", "Ръце"),
-    new(26, "Скот сгъване", "Ръце"),
-};
+    var exercises = new List<Exercise>();
 
-app.MapGet("/api/exercises", () => exercises);
+    await using var command = dataSource.CreateCommand(
+        "select id, name, muscle_group from exercises order by id");
+    await using var reader = await command.ExecuteReaderAsync();
+
+    while (await reader.ReadAsync())
+    {
+        exercises.Add(new Exercise(
+            reader.GetInt32(0),
+            reader.GetString(1),
+            reader.GetString(2)));
+    }
+
+    return exercises;
+});
 
 app.Run();
 
