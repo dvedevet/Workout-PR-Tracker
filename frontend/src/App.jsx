@@ -1,10 +1,10 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Dumbbell, History as HistoryIcon, TrendingUp } from "lucide-react"
-import ProgressView from "./components/ProgressView"
 import ExerciseList from "./components/ExerciseList"
 import SessionBoard from "./components/SessionBoard"
 import HistoryView from "./components/HistoryView"
-import { history as initialHistory } from "./data/history"
+import ProgressView from "./components/ProgressView"
+import { getWorkouts, saveWorkout } from "./api"
 
 const tabs = [
   { id: "workout", label: "Тренировка", icon: Dumbbell },
@@ -16,7 +16,18 @@ function App() {
   const [selectedExercise, setSelectedExercise] = useState(null)
   const [view, setView] = useState("workout")
   const [sets, setSets] = useState([])
-  const [history, setHistory] = useState(initialHistory)
+  const [history, setHistory] = useState([])
+  const [loadError, setLoadError] = useState(null)
+  const [isSaving, setIsSaving] = useState(false)
+  const [saveError, setSaveError] = useState(null)
+
+  useEffect(() => {
+    getWorkouts()
+      .then((data) => setHistory(data))
+      .catch(() =>
+        setLoadError("Историята не може да се зареди. Работи ли API-то?")
+      )
+  }, [])
 
   function handleBackgroundClick(e) {
     if (e.target.closest("button, input, h1, h2, h3, p, span, li")) return
@@ -31,32 +42,36 @@ function App() {
     setSets(sets.filter((set) => set.id !== id))
   }
 
-  function handleFinishWorkout() {
-    if (sets.length === 0) return
+  async function handleFinishWorkout() {
+    if (sets.length === 0 || isSaving) return
 
     const exercises = []
     sets.forEach((set) => {
       let group = exercises.find((item) => item.exerciseId === set.exerciseId)
       if (!group) {
-        group = {
-          exerciseId: set.exerciseId,
-          name: set.exerciseName,
-          muscleGroup: set.muscleGroup,
-          sets: [],
-        }
+        group = { exerciseId: set.exerciseId, sets: [] }
         exercises.push(group)
       }
       group.sets.push({ weight: set.weight, reps: set.reps })
     })
 
     const workout = {
-      id: Date.now(),
       date: new Date().toLocaleDateString("sv-SE"),
       exercises: exercises,
     }
 
-    setHistory([workout, ...history])
-    setSets([])
+    setIsSaving(true)
+    try {
+      await saveWorkout(workout)
+      setHistory(await getWorkouts())
+      setLoadError(null)
+      setSets([])
+      setSaveError(null)
+    } catch {
+      setSaveError("Тренировката не можа да се запази. Опитай пак.")
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   return (
@@ -84,16 +99,22 @@ function App() {
           })}
         </nav>
 
+        {loadError && (
+          <p className="mb-4 text-center text-sm text-red-500">{loadError}</p>
+        )}
+
         {view === "workout" && (
           <div className="grid items-start gap-6 lg:grid-cols-2">
             <ExerciseList
               selectedExercise={selectedExercise}
               onSelect={setSelectedExercise}
             />
-             <SessionBoard
+            <SessionBoard
               selectedExercise={selectedExercise}
               sets={sets}
               history={history}
+              isSaving={isSaving}
+              saveError={saveError}
               onAddSet={handleAddSet}
               onDeleteSet={handleDeleteSet}
               onFinish={handleFinishWorkout}
@@ -103,7 +124,6 @@ function App() {
 
         {view === "history" && <HistoryView history={history} />}
         {view === "progress" && <ProgressView history={history} />}
-
       </div>
     </div>
   )

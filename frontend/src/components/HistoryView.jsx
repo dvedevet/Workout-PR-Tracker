@@ -17,6 +17,14 @@ function getWorkoutName(workout) {
 function HistoryView({ history }) {
     const [openId, setOpenId] = useState(null)
 
+    if (history.length === 0) {
+        return (
+            <section className="rounded-3xl border border-white/60 bg-white/60 p-6 text-sky-700 shadow-lg backdrop-blur-md">
+                Още няма записани тренировки.
+            </section>
+        )
+    }
+
     return (
         <section className="grid gap-3">
             {history.map((workout) => {

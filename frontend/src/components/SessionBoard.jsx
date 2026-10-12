@@ -8,6 +8,8 @@ function SessionBoard({
     selectedExercise,
     sets,
     history,
+    isSaving,
+    saveError,
     onAddSet,
     onDeleteSet,
     onFinish,
@@ -124,12 +126,19 @@ function SessionBoard({
             </ul>
 
             {sets.length > 0 && (
-                <button
-                    onClick={onFinish}
-                    className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-sky-600 px-4 py-2.5 font-medium text-white shadow transition hover:bg-sky-700"
-                >
-                    <Check size={18} /> Завърши тренировката
-                </button>
+                <>
+                    <button
+                        onClick={onFinish}
+                        disabled={isSaving}
+                        className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-sky-600 px-4 py-2.5 font-medium text-white shadow transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        <Check size={18} />
+                        {isSaving ? "Запазване..." : "Завърши тренировката"}
+                    </button>
+                    {saveError && (
+                        <p className="mt-2 text-center text-sm text-red-500">{saveError}</p>
+                    )}
+                </>
             )}
         </section>
     )
