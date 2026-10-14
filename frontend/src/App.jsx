@@ -1,13 +1,29 @@
 import { useEffect, useState } from "react"
-import { Dumbbell, History as HistoryIcon, TrendingUp } from "lucide-react"
+import {
+  ClipboardList,
+  Dumbbell,
+  History as HistoryIcon,
+  TrendingUp,
+} from "lucide-react"
 import ExerciseList from "./components/ExerciseList"
+import PlansView from "./components/PlansView"
 import SessionBoard from "./components/SessionBoard"
 import HistoryView from "./components/HistoryView"
 import ProgressView from "./components/ProgressView"
-import { createExercise, getExercises, getWorkouts, saveWorkout } from "./api"
+import {
+  createExercise,
+  createPlan,
+  deletePlan,
+  getExercises,
+  getPlans,
+  getWorkouts,
+  saveWorkout,
+  updatePlan,
+} from "./api"
 
 const tabs = [
   { id: "workout", label: "Тренировка", icon: Dumbbell },
+  { id: "plans", label: "График", icon: ClipboardList },
   { id: "history", label: "История", icon: HistoryIcon },
   { id: "progress", label: "Прогрес", icon: TrendingUp },
 ]
@@ -16,6 +32,10 @@ function App() {
   const [exercises, setExercises] = useState([])
   const [exercisesLoading, setExercisesLoading] = useState(true)
   const [exercisesError, setExercisesError] = useState(null)
+  const [plans, setPlans] = useState([])
+  const [plansError, setPlansError] = useState(null)
+  const [plansStartNew, setPlansStartNew] = useState(false)
+  const [activePlan, setActivePlan] = useState(null)
   const [selectedExercise, setSelectedExercise] = useState(null)
   const [view, setView] = useState("workout")
   const [sets, setSets] = useState([])
@@ -34,6 +54,14 @@ function App() {
   }, [])
 
   useEffect(() => {
+    getPlans()
+      .then((data) => setPlans(data))
+      .catch(() =>
+        setPlansError("Графиците не могат да се заредят. Работи ли API-то?")
+      )
+  }, [])
+
+  useEffect(() => {
     getWorkouts()
       .then((data) => setHistory(data))
       .catch(() =>
@@ -42,14 +70,72 @@ function App() {
   }, [])
 
   function handleBackgroundClick(e) {
-    if (e.target.closest("button, input, h1, h2, h3, p, span, li")) return
+    if (
+      e.target.closest(
+        "button, input, select, h1, h2, h3, p, span, li, [data-keep-selection]"
+      )
+    )
+      return
     setSelectedExercise(null)
+  }
+
+  function handleTabClick(tabId) {
+    setPlansStartNew(false)
+    setView(tabId)
+  }
+
+  function handleGoToPlans() {
+    setPlansStartNew(true)
+    setView("plans")
   }
 
   async function handleCreateExercise(name, muscleGroups) {
     const created = await createExercise(name, muscleGroups)
     setExercises((current) => [...current, created])
     return created
+  }
+
+  async function handleCreatePlan(name, exerciseIds) {
+    const created = await createPlan(name, exerciseIds)
+    setPlans((current) => [...current, created])
+  }
+
+  async function handleUpdatePlan(id, name, exerciseIds) {
+    const updated = await updatePlan(id, name, exerciseIds)
+    setPlans((current) =>
+      current.map((plan) => (plan.id === id ? updated : plan))
+    )
+  }
+
+  async function handleDeletePlan(id) {
+    await deletePlan(id)
+    setPlans((current) => current.filter((plan) => plan.id !== id))
+  }
+
+  function handleLoadPlan(planId) {
+    const plan = plans.find((item) => item.id === planId)
+    if (!plan) {
+      setActivePlan(null)
+      return
+    }
+
+    // Тренировката получава КОПИЕ на списъка, за да не променя графика
+    setActivePlan({
+      id: plan.id,
+      name: plan.name,
+      exerciseIds: [...plan.exerciseIds],
+    })
+  }
+
+  function handleRemoveFromActivePlan(exerciseId) {
+    setActivePlan((current) =>
+      current
+        ? {
+          ...current,
+          exerciseIds: current.exerciseIds.filter((id) => id !== exerciseId),
+        }
+        : current
+    )
   }
 
   function handleAddSet(newSet) {
@@ -86,6 +172,7 @@ function App() {
       setHistory(await getWorkouts())
       setLoadError(null)
       setSets([])
+      setActivePlan(null)
       setSaveError(null)
     } catch {
       setSaveError("Тренировката не можа да се запази. Опитай пак.")
@@ -101,13 +188,13 @@ function App() {
           Дневник за тренировки
         </h1>
 
-        <nav className="mb-8 flex justify-center gap-2">
+        <nav className="mb-8 flex flex-wrap justify-center gap-2">
           {tabs.map((tab) => {
             const Icon = tab.icon
             return (
               <button
                 key={tab.id}
-                onClick={() => setView(tab.id)}
+                onClick={() => handleTabClick(tab.id)}
                 className={`flex items-center gap-2 rounded-full px-5 py-2 text-sm font-medium transition ${view === tab.id
                   ? "bg-sky-500 text-white shadow"
                   : "bg-white/70 text-sky-700 hover:bg-sky-100"
@@ -134,16 +221,36 @@ function App() {
               onCreateExercise={handleCreateExercise}
             />
             <SessionBoard
+              exercises={exercises}
+              plans={plans}
+              activePlan={activePlan}
               selectedExercise={selectedExercise}
               sets={sets}
               history={history}
               isSaving={isSaving}
               saveError={saveError}
+              onLoadPlan={handleLoadPlan}
+              onClearPlan={() => setActivePlan(null)}
+              onRemoveFromPlan={handleRemoveFromActivePlan}
+              onGoToPlans={handleGoToPlans}
               onAddSet={handleAddSet}
               onDeleteSet={handleDeleteSet}
               onFinish={handleFinishWorkout}
             />
           </div>
+        )}
+
+        {view === "plans" && (
+          <PlansView
+            plans={plans}
+            exercises={exercises}
+            error={plansError}
+            startNew={plansStartNew}
+            onCreatePlan={handleCreatePlan}
+            onUpdatePlan={handleUpdatePlan}
+            onDeletePlan={handleDeletePlan}
+            onCreateExercise={handleCreateExercise}
+          />
         )}
 
         {view === "history" && <HistoryView history={history} />}

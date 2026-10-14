@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { ChevronLeft, ChevronRight, Search, X } from "lucide-react"
 import ExerciseCard from "./ExerciseCard"
 import NewExerciseForm from "./NewExerciseForm"
@@ -15,9 +15,22 @@ function ExerciseList({
     onSelect,
     onCreateExercise,
 }) {
+    const sectionRef = useRef(null)
     const [query, setQuery] = useState("")
     const [activeGroup, setActiveGroup] = useState("Всички")
     const [page, setPage] = useState(0)
+
+    // Клик извън блока "Упражнения" чисти търсенето
+    useEffect(() => {
+        function handlePointerDown(e) {
+            if (sectionRef.current && !sectionRef.current.contains(e.target)) {
+                setQuery("")
+                setPage(0)
+            }
+        }
+        document.addEventListener("pointerdown", handlePointerDown)
+        return () => document.removeEventListener("pointerdown", handlePointerDown)
+    }, [])
 
     const cleanQuery = query.trim().replace(/\s+/g, " ")
     const normalizedQuery = cleanQuery.toLowerCase()
@@ -51,7 +64,6 @@ function ExerciseList({
 
     function handleGroupChange(group) {
         setActiveGroup(group)
-        setQuery("")
         setPage(0)
     }
 
@@ -63,7 +75,10 @@ function ExerciseList({
     }
 
     return (
-        <section className="rounded-3xl border border-white/60 bg-white/60 p-6 shadow-lg backdrop-blur-md">
+        <section
+            ref={sectionRef}
+            className="rounded-3xl border border-white/60 bg-white/60 p-6 shadow-lg backdrop-blur-md"
+        >
             <h2 className="mb-4 text-xl font-bold text-sky-900">Упражнения</h2>
 
             <div className="relative mb-4">
@@ -89,23 +104,26 @@ function ExerciseList({
                 )}
             </div>
 
-            <div
-                className={`mb-4 grid grid-cols-4 gap-2 ${isSearching ? "opacity-50" : ""
-                    }`}
-            >
-                {groups.map((group) => (
-                    <button
-                        key={group}
-                        onClick={() => handleGroupChange(group)}
-                        className={`rounded-full px-2 py-1.5 text-sm font-medium transition ${!isSearching && activeGroup === group
-                            ? "bg-sky-500 text-white shadow"
-                            : "bg-white/80 text-sky-700 hover:bg-sky-100"
-                            }`}
-                    >
-                        {group}
-                    </button>
-                ))}
-            </div>
+            {canCreate && (
+                <NewExerciseForm name={newName} onCreate={handleCreate} />
+            )}
+
+            {!isSearching && (
+                <div className="mb-4 flex flex-wrap justify-center gap-2">
+                    {groups.map((group) => (
+                        <button
+                            key={group}
+                            onClick={() => handleGroupChange(group)}
+                            className={`w-[calc(25%_-_0.4rem)] rounded-full px-2 py-1.5 text-sm font-medium transition ${activeGroup === group
+                                ? "bg-sky-500 text-white shadow"
+                                : "bg-white/80 text-sky-700 hover:bg-sky-100"
+                                }`}
+                        >
+                            {group}
+                        </button>
+                    ))}
+                </div>
+            )}
 
             {isLoading && (
                 <p className="py-6 text-center text-sm text-sky-600">Зареждане...</p>
@@ -116,23 +134,17 @@ function ExerciseList({
             )}
 
             {!isLoading && !error && (
-                <>
-                    <div className="grid gap-3">
-                        {visibleExercises.map((exercise) => (
-                            <ExerciseCard
-                                key={exercise.id}
-                                name={exercise.name}
-                                muscleGroups={exercise.muscleGroups}
-                                isSelected={selectedExercise?.id === exercise.id}
-                                onSelect={() => onSelect(exercise)}
-                            />
-                        ))}
-                    </div>
-
-                    {canCreate && (
-                        <NewExerciseForm name={newName} onCreate={handleCreate} />
-                    )}
-                </>
+                <div className="grid gap-3">
+                    {visibleExercises.map((exercise) => (
+                        <ExerciseCard
+                            key={exercise.id}
+                            name={exercise.name}
+                            muscleGroups={exercise.muscleGroups}
+                            isSelected={selectedExercise?.id === exercise.id}
+                            onSelect={() => onSelect(exercise)}
+                        />
+                    ))}
+                </div>
             )}
 
             {totalPages > 1 && (

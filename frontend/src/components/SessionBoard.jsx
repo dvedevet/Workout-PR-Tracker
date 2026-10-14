@@ -1,129 +1,105 @@
-import { useState } from "react"
-import { Plus, Trash2, Check, Trophy } from "lucide-react"
-import { getSessionPRs } from "../utils/stats"
-
-const prLabels = { "1RM": "1RM", weight: "тежест", reps: "повт." }
+import { Check } from "lucide-react"
+import ExerciseBlock from "./ExerciseBlock"
+import PlanMenu from "./PlanMenu"
+import { getLastPerformance, getSessionPRs } from "../utils/stats"
 
 function SessionBoard({
+    exercises,
+    plans,
+    activePlan,
     selectedExercise,
     sets,
     history,
     isSaving,
     saveError,
+    onLoadPlan,
+    onClearPlan,
+    onRemoveFromPlan,
+    onGoToPlans,
     onAddSet,
     onDeleteSet,
     onFinish,
 }) {
-    const [weight, setWeight] = useState("")
-    const [reps, setReps] = useState("")
-
-    function handleSubmit() {
-        if (!selectedExercise || weight === "" || reps === "") return
-
-        onAddSet({
-            id: Date.now(),
-            exerciseId: selectedExercise.id,
-            exerciseName: selectedExercise.name,
-            muscleGroups: selectedExercise.muscleGroups,
-            weight: Number(weight),
-            reps: Number(reps),
-        })
-        setWeight("")
-        setReps("")
-    }
-
-    function getSetNumber(index) {
-        const current = sets[index]
-        return (
-            sets.slice(0, index).filter((set) => set.exerciseId === current.exerciseId)
-                .length + 1
-        )
-    }
-
-    const inputClass =
-        "min-w-0 w-full rounded-xl border border-sky-200 bg-white/80 px-3 py-2 outline-none focus:ring-2 focus:ring-sky-300"
-
     const prTypes = getSessionPRs(history, sets)
+    const prById = {}
+    sets.forEach((set, index) => {
+        prById[set.id] = prTypes[index]
+    })
+
+    // Кои упражнения се показват: от графика, после тези със серии, после избраното
+    const blocks = []
+    function addBlock(exercise) {
+        if (!blocks.some((item) => item.id === exercise.id)) blocks.push(exercise)
+    }
+
+    const planExerciseIds = activePlan ? activePlan.exerciseIds : []
+    planExerciseIds.forEach((id) => {
+        const exercise = exercises.find((item) => item.id === id)
+        if (exercise) addBlock(exercise)
+    })
+    sets.forEach((set) => {
+        addBlock(
+            exercises.find((item) => item.id === set.exerciseId) ?? {
+                id: set.exerciseId,
+                name: set.exerciseName,
+                muscleGroups: set.muscleGroups,
+            }
+        )
+    })
+    if (selectedExercise) addBlock(selectedExercise)
 
     return (
         <section className="rounded-3xl border border-white/60 bg-white/60 p-6 shadow-lg backdrop-blur-md">
-            <h2 className="mb-1 text-xl font-bold text-sky-900">Текуща тренировка</h2>
-            <p className="mb-4 text-sm text-sky-600">
-                {selectedExercise
-                    ? `Упражнение: ${selectedExercise.name}`
-                    : "Избери упражнение отляво"}
-            </p>
-
-            <div className="mb-4 grid grid-cols-2 gap-2 sm:flex">
-                <input
-                    type="number"
-                    inputMode="decimal"
-                    placeholder="Тежест (кг)"
-                    value={weight}
-                    onChange={(e) => setWeight(e.target.value)}
-                    className={inputClass}
+            <div className="mb-4 flex items-center justify-between gap-3">
+                <h2 className="text-xl font-bold text-sky-900">Текуща тренировка</h2>
+                <PlanMenu
+                    plans={plans}
+                    activePlan={activePlan}
+                    onLoad={onLoadPlan}
+                    onClear={onClearPlan}
+                    onGoToPlans={onGoToPlans}
                 />
-                <input
-                    type="number"
-                    inputMode="numeric"
-                    placeholder="Повторения"
-                    value={reps}
-                    onChange={(e) => setReps(e.target.value)}
-                    className={inputClass}
-                />
-                <button
-                    onClick={handleSubmit}
-                    disabled={!selectedExercise}
-                    className="col-span-2 flex items-center justify-center gap-1 rounded-xl bg-sky-500 px-4 py-2 font-medium text-white shadow transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-50 sm:col-span-1"
-                >
-                    <Plus size={18} /> Добави
-                </button>
             </div>
 
-            <ul className="grid gap-2">
-                {sets.map((set, index) => {
-                    const setPRs = prTypes[index]
+            {activePlan && (
+                <p className="mb-3 text-xs text-slate-500">
+                    График „{activePlan.name}“. Промените тук важат само за тази
+                    тренировка.
+                </p>
+            )}
 
-                    return (
-                        <li
-                            key={set.id}
-                            className="flex items-center justify-between gap-3 rounded-xl bg-white/80 px-4 py-3 shadow-sm"
-                        >
-                            <div className="min-w-0">
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <p className="font-semibold text-sky-800">{set.exerciseName}</p>
-                                    <span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-700">
-                                        {set.muscleGroups.join(" · ")}
-                                    </span>
-                                    {setPRs.length > 0 && (
-                                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-700">
-                                            <Trophy size={12} />
-                                            NEW PR · {setPRs.map((type) => prLabels[type]).join(" + ")}
-                                        </span>
-                                    )}
-                                </div>
-                                <div className="mt-2 flex flex-wrap gap-1.5 text-sm">
-                                    <span className="rounded-lg bg-slate-100 px-2 py-0.5 text-slate-600">
-                                        Серия {getSetNumber(index)}
-                                    </span>
-                                    <span className="rounded-lg bg-sky-50 px-2 py-0.5 font-medium text-sky-800">
-                                        {set.weight} кг
-                                    </span>
-                                    <span className="rounded-lg bg-sky-50 px-2 py-0.5 font-medium text-sky-800">
-                                        {set.reps} повт.
-                                    </span>
-                                </div>
-                            </div>
-                            <button
-                                onClick={() => onDeleteSet(set.id)}
-                                className="shrink-0 rounded-lg p-1.5 text-sky-400 transition hover:bg-sky-100 hover:text-red-400"
-                            >
-                                <Trash2 size={18} />
-                            </button>
-                        </li>
-                    )
-                })}
-            </ul>
+            {blocks.length === 0 ? (
+                <p className="text-sm text-sky-600">
+                    Избери упражнение от списъка или зареди график.
+                </p>
+            ) : (
+                <div className="grid gap-3">
+                    {blocks.map((exercise) => {
+                        const exerciseSets = sets.filter(
+                            (set) => set.exerciseId === exercise.id
+                        )
+                        const canRemove =
+                            exerciseSets.length === 0 &&
+                            planExerciseIds.includes(exercise.id)
+
+                        return (
+                            <ExerciseBlock
+                                key={exercise.id}
+                                exercise={exercise}
+                                sets={exerciseSets}
+                                prById={prById}
+                                lastTime={getLastPerformance(history, exercise.id)}
+                                isSelected={selectedExercise?.id === exercise.id}
+                                onAddSet={onAddSet}
+                                onDeleteSet={onDeleteSet}
+                                onRemove={
+                                    canRemove ? () => onRemoveFromPlan(exercise.id) : null
+                                }
+                            />
+                        )
+                    })}
+                </div>
+            )}
 
             {sets.length > 0 && (
                 <>

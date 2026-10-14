@@ -147,3 +147,24 @@ export function getSessionPRs(history, sets) {
         })
     })
 }
+// Последната тренировка, в която е правено упражнението
+export function getLastPerformance(history, exerciseId) {
+    let last = null
+
+    history.forEach((workout) => {
+        const entry = workout.exercises.find(
+            (exercise) => exercise.exerciseId === exerciseId
+        )
+        if (!entry) return
+
+        const isNewer =
+            !last ||
+            workout.date > last.date ||
+            (workout.date === last.date && workout.id > last.id)
+        if (isNewer) {
+            last = { id: workout.id, date: workout.date, sets: entry.sets }
+        }
+    })
+
+    return last
+}

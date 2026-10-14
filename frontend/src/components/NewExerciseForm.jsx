@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { Plus } from "lucide-react"
 import { MUSCLE_GROUPS } from "../data/muscleGroups"
+import { userMessage } from "../api"
 
 function NewExerciseForm({ name, onCreate }) {
     const [groups, setGroups] = useState([])
@@ -23,21 +24,19 @@ function NewExerciseForm({ name, onCreate }) {
         try {
             await onCreate(name, groups)
         } catch (err) {
-            setError(err.message)
+            setError(userMessage(err))
         } finally {
             setIsSaving(false)
         }
     }
 
     return (
-        <div className="mt-3 rounded-2xl border border-sky-200 bg-white/70 p-4">
-            <p className="text-sm text-sky-900">
-                Няма такова упражнение. Добави{" "}
-                <span className="font-semibold">„{name}“</span> като ново и избери
-                за кои мускули е:
+        <div className="mb-3 rounded-2xl border border-sky-200 bg-white/70 p-3">
+            <p className="mb-2 text-xs text-slate-500">
+                Избери мускулни групи (първата избрана е основна ★)
             </p>
 
-            <div className="mt-3 flex flex-wrap gap-2">
+            <div className="grid grid-cols-3 gap-2">
                 {MUSCLE_GROUPS.map((group) => {
                     const isSelected = groups.includes(group)
                     const isPrimary = groups[0] === group
@@ -45,7 +44,7 @@ function NewExerciseForm({ name, onCreate }) {
                         <button
                             key={group}
                             onClick={() => toggleGroup(group)}
-                            className={`rounded-full px-3 py-1 text-sm font-medium transition ${isSelected
+                            className={`rounded-full px-2 py-1.5 text-sm font-medium transition ${isSelected
                                 ? "bg-sky-500 text-white shadow"
                                 : "bg-white/80 text-sky-700 hover:bg-sky-100"
                                 }`}
@@ -56,9 +55,6 @@ function NewExerciseForm({ name, onCreate }) {
                     )
                 })}
             </div>
-            <p className="mt-2 text-xs text-slate-500">
-                Първата избрана група е основна (★).
-            </p>
 
             {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
 
