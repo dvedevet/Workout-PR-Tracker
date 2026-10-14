@@ -24,7 +24,7 @@ function SessionBoard({
             id: Date.now(),
             exerciseId: selectedExercise.id,
             exerciseName: selectedExercise.name,
-            muscleGroup: selectedExercise.muscleGroup,
+            muscleGroups: selectedExercise.muscleGroups,
             weight: Number(weight),
             reps: Number(reps),
         })
@@ -93,7 +93,7 @@ function SessionBoard({
                                 <div className="flex flex-wrap items-center gap-2">
                                     <p className="font-semibold text-sky-800">{set.exerciseName}</p>
                                     <span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-700">
-                                        {set.muscleGroup}
+                                        {set.muscleGroups.join(" · ")}
                                     </span>
                                     {setPRs.length > 0 && (
                                         <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-700">

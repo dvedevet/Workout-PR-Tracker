@@ -4,7 +4,7 @@ import ExerciseList from "./components/ExerciseList"
 import SessionBoard from "./components/SessionBoard"
 import HistoryView from "./components/HistoryView"
 import ProgressView from "./components/ProgressView"
-import { getWorkouts, saveWorkout } from "./api"
+import { createExercise, getExercises, getWorkouts, saveWorkout } from "./api"
 
 const tabs = [
   { id: "workout", label: "Тренировка", icon: Dumbbell },
@@ -13,6 +13,9 @@ const tabs = [
 ]
 
 function App() {
+  const [exercises, setExercises] = useState([])
+  const [exercisesLoading, setExercisesLoading] = useState(true)
+  const [exercisesError, setExercisesError] = useState(null)
   const [selectedExercise, setSelectedExercise] = useState(null)
   const [view, setView] = useState("workout")
   const [sets, setSets] = useState([])
@@ -20,6 +23,15 @@ function App() {
   const [loadError, setLoadError] = useState(null)
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState(null)
+
+  useEffect(() => {
+    getExercises()
+      .then((data) => setExercises(data))
+      .catch(() =>
+        setExercisesError("Упражненията не могат да се заредят. Работи ли API-то?")
+      )
+      .finally(() => setExercisesLoading(false))
+  }, [])
 
   useEffect(() => {
     getWorkouts()
@@ -34,6 +46,12 @@ function App() {
     setSelectedExercise(null)
   }
 
+  async function handleCreateExercise(name, muscleGroups) {
+    const created = await createExercise(name, muscleGroups)
+    setExercises((current) => [...current, created])
+    return created
+  }
+
   function handleAddSet(newSet) {
     setSets([...sets, newSet])
   }
@@ -45,19 +63,21 @@ function App() {
   async function handleFinishWorkout() {
     if (sets.length === 0 || isSaving) return
 
-    const exercises = []
+    const workoutExercises = []
     sets.forEach((set) => {
-      let group = exercises.find((item) => item.exerciseId === set.exerciseId)
+      let group = workoutExercises.find(
+        (item) => item.exerciseId === set.exerciseId
+      )
       if (!group) {
         group = { exerciseId: set.exerciseId, sets: [] }
-        exercises.push(group)
+        workoutExercises.push(group)
       }
       group.sets.push({ weight: set.weight, reps: set.reps })
     })
 
     const workout = {
       date: new Date().toLocaleDateString("sv-SE"),
-      exercises: exercises,
+      exercises: workoutExercises,
     }
 
     setIsSaving(true)
@@ -106,8 +126,12 @@ function App() {
         {view === "workout" && (
           <div className="grid items-start gap-6 lg:grid-cols-2">
             <ExerciseList
+              exercises={exercises}
+              isLoading={exercisesLoading}
+              error={exercisesError}
               selectedExercise={selectedExercise}
               onSelect={setSelectedExercise}
+              onCreateExercise={handleCreateExercise}
             />
             <SessionBoard
               selectedExercise={selectedExercise}

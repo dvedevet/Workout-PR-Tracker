@@ -10,7 +10,7 @@ function formatDate(isoDate) {
 }
 
 function getWorkoutName(workout) {
-    const groups = workout.exercises.map((exercise) => exercise.muscleGroup)
+    const groups = workout.exercises.map((exercise) => exercise.muscleGroups[0])
     return [...new Set(groups)].join(" + ")
 }
 
@@ -63,7 +63,7 @@ function HistoryView({ history }) {
                                                 {exercise.name}
                                             </p>
                                             <span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-700">
-                                                {exercise.muscleGroup}
+                                                {exercise.muscleGroups.join(" · ")}
                                             </span>
                                         </div>
                                         <div className="flex flex-wrap gap-1.5 text-sm">

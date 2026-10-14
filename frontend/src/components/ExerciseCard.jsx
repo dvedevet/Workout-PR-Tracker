@@ -1,6 +1,6 @@
 import { Dumbbell, Check } from "lucide-react"
 
-function ExerciseCard({ name, muscleGroup, isSelected, onSelect }) {
+function ExerciseCard({ name, muscleGroups, isSelected, onSelect }) {
     return (
         <button
             onClick={onSelect}
@@ -14,7 +14,7 @@ function ExerciseCard({ name, muscleGroup, isSelected, onSelect }) {
             </div>
             <div>
                 <h3 className="font-semibold text-slate-800">{name}</h3>
-                <p className="text-sm text-sky-600">{muscleGroup}</p>
+                <p className="text-sm text-sky-600">{muscleGroups.join(" · ")}</p>
             </div>
         </button>
     )
