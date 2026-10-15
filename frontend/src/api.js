@@ -6,7 +6,7 @@ export class ApiError extends Error { }
 export function userMessage(err) {
     return err instanceof ApiError
         ? err.message
-        : "Нещо се обърка. Провери дали API-то работи и опитай пак."
+        : "Нещо се обърка."
 }
 
 async function readError(response) {
@@ -16,7 +16,7 @@ async function readError(response) {
     } catch {
         // отговорът не е JSON, ползваме общо съобщение
     }
-    return `Грешка от API-то (${response.status}).`
+    return `Грешка от API: (${response.status}).`
 }
 
 async function request(path, options) {

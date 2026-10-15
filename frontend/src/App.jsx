@@ -49,7 +49,7 @@ function App() {
     getExercises()
       .then((data) => setExercises(data))
       .catch(() =>
-        setExercisesError("Упражненията не могат да се заредят. Работи ли API-то?")
+        setExercisesError("Упражненията не могат да се заредят.")
       )
       .finally(() => setExercisesLoading(false))
   }, [])
@@ -58,7 +58,7 @@ function App() {
     getPlans()
       .then((data) => setPlans(data))
       .catch(() =>
-        setPlansError("Графиците не могат да се заредят. Работи ли API-то?")
+        setPlansError("Графиците не могат да се заредят.")
       )
   }, [])
 
@@ -66,7 +66,7 @@ function App() {
     getWorkouts()
       .then((data) => setHistory(data))
       .catch(() =>
-        setLoadError("Историята не може да се зареди. Работи ли API-то?")
+        setLoadError("Историята не може да се зареди.")
       )
   }, [])
 

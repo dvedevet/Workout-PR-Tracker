@@ -5,10 +5,6 @@ export function epley1RM(weight, reps) {
     return weight * (1 + reps / 30)
 }
 
-function round1(number) {
-    return Math.round(number * 10) / 10
-}
-
 // Всички серии за дадено упражнение от историята
 export function getHistorySets(history, exerciseId) {
     const result = []
