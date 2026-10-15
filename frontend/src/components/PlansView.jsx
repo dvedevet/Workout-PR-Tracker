@@ -53,33 +53,12 @@ function PlansView({
 
     return (
         <section className="grid gap-4">
-            <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-sky-900">График</h2>
-                {editing !== "new" && (
-                    <button
-                        onClick={() => setEditing("new")}
-                        className="flex items-center gap-1 rounded-full bg-sky-500 px-4 py-2 text-sm font-medium text-white shadow transition hover:bg-sky-600"
-                    >
-                        <Plus size={16} /> Нов график
-                    </button>
-                )}
-            </div>
 
             {error && <p className="text-sm text-red-500">{error}</p>}
 
-            {editing === "new" && (
-                <PlanForm
-                    key="new"
-                    exercises={exercises}
-                    onSave={handleSaveNew}
-                    onCancel={() => setEditing(null)}
-                    onCreateExercise={onCreateExercise}
-                />
-            )}
-
             {plans.length === 0 && editing !== "new" && !error && (
-                <p className="rounded-3xl border border-white/60 bg-white/60 p-6 text-sm text-sky-700 shadow-lg backdrop-blur-md">
-                    Още нямаш графици. Натисни „Нов график“, за да създадеш първия.
+                <p className="rounded-3xl border border-white/60 bg-white/60 p-6 text-sky-700 shadow-lg backdrop-blur-md">
+                    Още нямаш графици. Натисни "Нов график".
                 </p>
             )}
 
@@ -130,6 +109,25 @@ function PlansView({
                         </ol>
                     </article>
                 )
+            )}
+
+            {editing === "new" ? (
+                <PlanForm
+                    key="new"
+                    exercises={exercises}
+                    onSave={handleSaveNew}
+                    onCancel={() => setEditing(null)}
+                    onCreateExercise={onCreateExercise}
+                />
+            ) : (
+                <div className="flex justify-center">
+                    <button
+                        onClick={() => setEditing("new")}
+                        className="flex items-center gap-1 rounded-full bg-sky-500 px-4 py-2 font-medium text-white shadow transition hover:bg-sky-600"
+                    >
+                        <Plus size={16} /> Нов график
+                    </button>
+                </div>
             )}
 
             {pendingDelete && (
