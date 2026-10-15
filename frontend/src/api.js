@@ -83,3 +83,7 @@ export async function deletePlan(id) {
 export async function deleteWorkout(id) {
     await request(`/api/workouts/${id}`, { method: "DELETE" })
 }
+
+export async function getProgress(exerciseId) {
+    return (await request(`/api/exercises/${exerciseId}/progress`)).json()
+}

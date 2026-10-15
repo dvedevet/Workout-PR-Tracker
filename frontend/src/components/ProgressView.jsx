@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { ChevronDown } from "lucide-react"
 import {
     ResponsiveContainer,
@@ -9,7 +9,7 @@ import {
     CartesianGrid,
     Tooltip,
 } from "recharts"
-import { getExerciseProgress } from "../utils/stats"
+import { getProgress, userMessage } from "../api"
 
 const metrics = [
     { id: "oneRM", label: "Прогнозен 1RM" },
@@ -78,7 +78,10 @@ function ProgressChart({ data, dataKey, name }) {
 function ProgressView({ history }) {
     const [selectedId, setSelectedId] = useState(null)
     const [metric, setMetric] = useState("oneRM")
+    const [result, setResult] = useState(null) // { exerciseId, points }
+    const [error, setError] = useState(null)
 
+    // Кои упражнения са тренирани (от историята)
     const trained = []
     history.forEach((workout) => {
         workout.exercises.forEach((exercise) => {
@@ -88,25 +91,53 @@ function ProgressView({ history }) {
         })
     })
 
+    // Ако избраното вече го няма в историята (изтрита тренировка), взимаме първото
+    const activeId = trained.some((item) => item.exerciseId === selectedId)
+        ? selectedId
+        : (trained[0]?.exerciseId ?? null)
+
+    // Точките идват от API-то; при смяна на упражнението или историята се теглят наново
+    useEffect(() => {
+        if (activeId === null) return
+
+        let cancelled = false
+        getProgress(activeId)
+            .then((points) => {
+                if (cancelled) return
+                setResult({ exerciseId: activeId, points })
+                setError(null)
+            })
+            .catch((err) => {
+                if (!cancelled) setError(userMessage(err))
+            })
+
+        // Ако потребителят смени упражнението, преди отговорът да дойде,
+        // старият отговор се игнорира
+        return () => {
+            cancelled = true
+        }
+    }, [activeId, history])
+
     if (trained.length === 0) {
         return (
             <section className="rounded-3xl border border-white/60 bg-white/60 p-6 text-sky-700 shadow-lg backdrop-blur-md">
-                Още няма записани тренировки. Завърши тренировка, за да можеш да следиш прогреса си.            </section>
+                Още няма записани тренировки. Завърши тренировка, за да можеш да следиш прогреса си.
+            </section>
         )
     }
 
-    const activeId = selectedId ?? trained[0].exerciseId
-    const points = getExerciseProgress(history, activeId)
-    const hasWeight = points.some((point) => point.maxWeight > 0)
-    const chartData = points.map((point) => ({
+    const points =
+        result && result.exerciseId === activeId ? result.points : null
+    const chartData = (points ?? []).map((point) => ({
         ...point,
         label: shortDate(point.date),
     }))
+    const hasWeight = chartData.some((point) => point.maxWeight > 0)
     const activeMetric = metrics.find((item) => item.id === metric)
 
-    const bestOneRM = Math.max(...points.map((point) => point.oneRM))
-    const maxWeight = Math.max(...points.map((point) => point.maxWeight))
-    const maxReps = Math.max(...points.map((point) => point.maxReps))
+    const bestOneRM = Math.max(...chartData.map((point) => point.oneRM))
+    const maxWeight = Math.max(...chartData.map((point) => point.maxWeight))
+    const maxReps = Math.max(...chartData.map((point) => point.maxReps))
 
     const stats = [
         { label: "Макс. тежест", value: `${maxWeight} кг` },
@@ -136,7 +167,19 @@ function ProgressView({ history }) {
                 </div>
             </div>
 
-            {hasWeight ? (
+            {error && <p className="mb-3 text-sm text-red-500">{error}</p>}
+
+            {points === null && !error && (
+                <p className="py-6 text-center text-sm text-sky-600">Зареждане...</p>
+            )}
+
+            {points !== null && points.length === 0 && (
+                <p className="py-6 text-center text-sm text-sky-600">
+                    Няма данни за това упражнение.
+                </p>
+            )}
+
+            {points !== null && points.length > 0 && hasWeight && (
                 <>
                     <div className="mb-2 grid grid-cols-2 gap-2">
                         {stats.map((stat) => (
@@ -177,7 +220,9 @@ function ProgressView({ history }) {
                         name={activeMetric.label}
                     />
                 </>
-            ) : (
+            )}
+
+            {points !== null && points.length > 0 && !hasWeight && (
                 <>
                     <div className="mb-2 rounded-2xl bg-white/80 p-3 text-center shadow-sm">
                         <p className="text-xs text-slate-500">Макс. повторения</p>

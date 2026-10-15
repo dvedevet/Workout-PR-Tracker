@@ -12,3 +12,5 @@ record NewSet(decimal Weight, int Reps);
 
 record PlanDto(int Id, string Name, List<int> ExerciseIds);
 record PlanInput(string Name, List<int> ExerciseIds);
+
+record ProgressPointDto(DateOnly Date, decimal OneRM, decimal MaxWeight, int MaxWeightReps, int MaxReps);

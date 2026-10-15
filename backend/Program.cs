@@ -85,6 +85,25 @@ app.MapPost(
     }
 );
 
+app.MapGet(
+    "/api/exercises/{id:int}/progress",
+    async (int id, AppDbContext db) =>
+    {
+        if (!await db.Exercises.AnyAsync(e => e.Id == id))
+            return Results.NotFound();
+
+        // Всички серии на упражнението, заедно с датата на тренировката
+        var rows = await db
+            .Workouts.SelectMany(w =>
+                w.Sets.Where(s => s.ExerciseId == id)
+                    .Select(s => new SetRow(w.Date, s.Weight, s.Reps))
+            )
+            .ToListAsync();
+
+        return Results.Ok(Stats.BuildProgress(rows));
+    }
+);
+
 // ---------- Тренировки ----------
 
 app.MapGet(

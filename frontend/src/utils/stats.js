@@ -22,59 +22,6 @@ export function getHistorySets(history, exerciseId) {
     return result
 }
 
-// По една точка за всеки ден: най-доброто от тренировките през този ден
-export function getExerciseProgress(history, exerciseId) {
-    const points = history
-        .map((workout) => {
-            const entry = workout.exercises.find(
-                (exercise) => exercise.exerciseId === exerciseId
-            )
-            if (!entry) return null
-
-            const maxWeight = Math.max(...entry.sets.map((set) => set.weight))
-            const maxWeightReps = Math.max(
-                ...entry.sets
-                    .filter((set) => set.weight === maxWeight)
-                    .map((set) => set.reps)
-            )
-
-            return {
-                date: workout.date,
-                oneRM: round1(
-                    Math.max(...entry.sets.map((set) => epley1RM(set.weight, set.reps)))
-                ),
-                maxWeight: maxWeight,
-                maxWeightReps: maxWeightReps,
-                maxReps: Math.max(...entry.sets.map((set) => set.reps)),
-            }
-        })
-        .filter(Boolean)
-
-    // Тренировки в един и същи ден се обединяват в една точка
-    const byDate = {}
-    points.forEach((point) => {
-        const existing = byDate[point.date]
-        if (!existing) {
-            byDate[point.date] = { ...point }
-            return
-        }
-
-        existing.oneRM = Math.max(existing.oneRM, point.oneRM)
-        existing.maxReps = Math.max(existing.maxReps, point.maxReps)
-
-        const heavier = point.maxWeight > existing.maxWeight
-        const sameWeightMoreReps =
-            point.maxWeight === existing.maxWeight &&
-            point.maxWeightReps > existing.maxWeightReps
-        if (heavier || sameWeightMoreReps) {
-            existing.maxWeight = point.maxWeight
-            existing.maxWeightReps = point.maxWeightReps
-        }
-    })
-
-    return Object.values(byDate).sort((a, b) => a.date.localeCompare(b.date))
-}
-
 // Дали една серия е рекорд спрямо предишните серии на упражнението.
 // Връща "1RM", "weight", "reps" или null (по приоритет в този ред).
 // Какви рекорди постига една серия спрямо предишните серии на упражнението.
@@ -83,6 +30,8 @@ export function getPRTypes(set, previousSets) {
     if (previousSets.length === 0) return []
 
     const types = []
+
+    // Epley: трябва да съвпада с Stats.Epley1RM в backend/Stats.cs
 
     // 1. Нов прогнозен 1RM
     const bestOneRM = Math.max(
