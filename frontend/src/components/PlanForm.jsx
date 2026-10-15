@@ -2,6 +2,7 @@ import { useState } from "react"
 import { ArrowDown, ArrowUp, X } from "lucide-react"
 import NewExerciseForm from "./NewExerciseForm"
 import { userMessage } from "../api"
+import { MUSCLE_GROUPS } from "../data/muscleGroups"
 
 function PlanForm({ plan, exercises, onSave, onCancel, onCreateExercise }) {
     const [name, setName] = useState(plan?.name ?? "")
@@ -26,6 +27,13 @@ function PlanForm({ plan, exercises, onSave, onCancel, onCreateExercise }) {
             !ids.includes(exercise.id) &&
             exercise.name.toLowerCase().includes(normalizedQuery)
     )
+
+    // Предложенията, групирани по основна мускулна група
+    const groupedAvailable = MUSCLE_GROUPS.map((group) => ({
+        group,
+        items: available.filter((exercise) => exercise.muscleGroups[0] === group),
+    })).filter((entry) => entry.items.length > 0)
+
     const exactMatch = exercises.find(
         (exercise) => exercise.name.toLowerCase() === normalizedQuery
     )
@@ -157,21 +165,32 @@ function PlanForm({ plan, exercises, onSave, onCancel, onCreateExercise }) {
             )}
 
             {available.length > 0 && (
-                <ul className="mb-2 max-h-48 overflow-y-auto rounded-xl bg-white/60 p-1">
-                    {available.map((exercise) => (
-                        <li key={exercise.id}>
-                            <button
-                                onClick={() => addExercise(exercise.id)}
-                                className="flex w-full items-center justify-between gap-2 rounded-lg px-3 py-1.5 text-left text-sm transition hover:bg-sky-100"
-                            >
-                                <span className="text-slate-800">{exercise.name}</span>
-                                <span className="shrink-0 text-xs text-sky-600">
-                                    {exercise.muscleGroups.join(" · ")}
-                                </span>
-                            </button>
-                        </li>
+                <div className="mb-2 max-h-56 overflow-y-auto rounded-xl bg-white/60 p-1">
+                    {groupedAvailable.map(({ group, items }) => (
+                        <div key={group}>
+                            <p className="px-3 pb-0.5 pt-2 text-xs font-semibold uppercase tracking-wide text-sky-600">
+                                {group}
+                            </p>
+                            <ul>
+                                {items.map((exercise) => (
+                                    <li key={exercise.id}>
+                                        <button
+                                            onClick={() => addExercise(exercise.id)}
+                                            className="flex w-full items-center justify-between gap-2 rounded-lg px-3 py-1.5 text-left text-sm transition hover:bg-sky-100"
+                                        >
+                                            <span className="text-slate-800">{exercise.name}</span>
+                                            <span className="shrink-0 text-xs text-slate-400">
+                                                <span className="shrink-0 rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-700">
+                                                    {exercise.muscleGroups[0]}
+                                                </span>
+                                            </span>
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
                     ))}
-                </ul>
+                </div>
             )}
 
             {canCreate && (

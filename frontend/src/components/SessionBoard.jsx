@@ -2,6 +2,7 @@ import { Check } from "lucide-react"
 import ExerciseBlock from "./ExerciseBlock"
 import PlanMenu from "./PlanMenu"
 import { getLastPerformance, getSessionPRs } from "../utils/stats"
+import { MUSCLE_GROUPS } from "../data/muscleGroups"
 
 function SessionBoard({
     exercises,
@@ -33,10 +34,19 @@ function SessionBoard({
     }
 
     const planExerciseIds = activePlan ? activePlan.exerciseIds : []
-    planExerciseIds.forEach((id) => {
-        const exercise = exercises.find((item) => item.id === id)
-        if (exercise) addBlock(exercise)
-    })
+
+    // Реда на основната група в списъка с групи (Гърди, Гръб, Крака...)
+    function groupOrder(exercise) {
+        const index = MUSCLE_GROUPS.indexOf(exercise.muscleGroups[0])
+        return index === -1 ? MUSCLE_GROUPS.length : index
+    }
+
+    planExerciseIds
+        .map((id) => exercises.find((item) => item.id === id))
+        .filter(Boolean)
+        .sort((a, b) => groupOrder(a) - groupOrder(b)) // стабилно: вътре в групата остава редът от графика
+        .forEach(addBlock)
+
     sets.forEach((set) => {
         addBlock(
             exercises.find((item) => item.id === set.exerciseId) ?? {

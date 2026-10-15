@@ -90,9 +90,11 @@ function PlansView({
                         key={plan.id}
                         className="rounded-3xl border border-white/60 bg-white/60 p-5 shadow-lg backdrop-blur-md"
                     >
-                        <div className="flex items-start justify-between gap-3">
-                            <h3 className="font-semibold text-sky-900">{plan.name}</h3>
-                            <div className="flex shrink-0 items-center">
+                        <div className="relative">
+                            <h3 className="px-20 text-center font-semibold text-sky-900">
+                                {plan.name}
+                            </h3>
+                            <div className="absolute right-0 top-1/2 flex -translate-y-1/2 items-center">
                                 <button
                                     onClick={() => setEditing(plan.id)}
                                     className="rounded-lg p-1.5 text-sky-500 transition hover:bg-sky-100"
@@ -107,14 +109,14 @@ function PlansView({
                                 </button>
                             </div>
                         </div>
-                        <ol className="mt-3 flex flex-wrap gap-1.5 text-sm">
+                        <ol className="mt-3 grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
                             {plan.exerciseIds.map((id, index) => (
                                 <li
                                     key={id}
-                                    className="rounded-lg bg-sky-50 px-2 py-0.5 font-medium text-sky-800"
+                                    className="flex items-start gap-1.5 rounded-xl bg-sky-50 px-3 py-2 font-medium leading-tight text-sky-800"
                                 >
-                                    <span className="text-slate-500">{index + 1}.</span>{" "}
-                                    {exerciseName(id)}
+                                    <span className="text-slate-500">{index + 1}.</span>
+                                    <span>{exerciseName(id)}</span>
                                 </li>
                             ))}
                         </ol>
