@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { CalendarDays, ChevronDown, Trash2 } from "lucide-react"
+import ConfirmDialog from "./ConfirmDialog"
 import { userMessage } from "../api"
 
 function formatDate(isoDate) {
@@ -18,24 +19,29 @@ function getWorkoutName(workout) {
 
 function HistoryView({ history, onDelete }) {
     const [openId, setOpenId] = useState(null)
-    const [deletingId, setDeletingId] = useState(null)
+    const [pending, setPending] = useState(null) // тренировката, която чака потвърждение
+    const [isDeleting, setIsDeleting] = useState(false)
     const [error, setError] = useState(null)
 
-    async function handleDelete(workout) {
-        const message =
-            `Да изтрия ли тренировката от ${formatDate(workout.date)}?\n\n` +
-            "Тя ще изчезне и от графиките в „Прогрес“, а рекордите ще се " +
-            "преизчислят без нея. Действието не може да се върне."
-        if (!window.confirm(message)) return
-
+    function askDelete(workout) {
         setError(null)
-        setDeletingId(workout.id)
+        setPending(workout)
+    }
+
+    function cancelDelete() {
+        if (!isDeleting) setPending(null)
+    }
+
+    async function confirmDelete() {
+        setIsDeleting(true)
+        setError(null)
         try {
-            await onDelete(workout.id)
+            await onDelete(pending.id)
+            setPending(null)
         } catch (err) {
             setError(userMessage(err))
         } finally {
-            setDeletingId(null)
+            setIsDeleting(false)
         }
     }
 
@@ -49,8 +55,6 @@ function HistoryView({ history, onDelete }) {
 
     return (
         <section className="grid gap-3">
-            {error && <p className="text-center text-sm text-red-500">{error}</p>}
-
             {history.map((workout) => {
                 const isOpen = openId === workout.id
 
@@ -79,10 +83,9 @@ function HistoryView({ history, onDelete }) {
                                 />
                             </button>
                             <button
-                                onClick={() => handleDelete(workout)}
-                                disabled={deletingId === workout.id}
+                                onClick={() => askDelete(workout)}
                                 title="Изтрий тренировката"
-                                className="mr-4 shrink-0 rounded-lg p-1.5 text-sky-400 transition hover:bg-sky-100 hover:text-red-400 disabled:opacity-50"
+                                className="mr-4 shrink-0 rounded-lg p-1.5 text-sky-400 transition hover:bg-sky-100 hover:text-red-400"
                             >
                                 <Trash2 size={18} />
                             </button>
@@ -118,6 +121,18 @@ function HistoryView({ history, onDelete }) {
                     </article>
                 )
             })}
+
+            {pending && (
+                <ConfirmDialog
+                    title="Изтриване на тренировка?"
+                    message={`Тренировката ще бъде изтрита завинаги. Тя ще изчезне от графиката в "Прогрес", а резултатите ще се преизчислят без нея.`}
+                    confirmLabel="Изтрий"
+                    isBusy={isDeleting}
+                    error={error}
+                    onConfirm={confirmDelete}
+                    onCancel={cancelDelete}
+                />
+            )}
         </section>
     )
 }

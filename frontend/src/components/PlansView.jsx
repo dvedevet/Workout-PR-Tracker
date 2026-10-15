@@ -2,6 +2,7 @@ import { useState } from "react"
 import { Pencil, Plus, Trash2 } from "lucide-react"
 import PlanForm from "./PlanForm"
 import { userMessage } from "../api"
+import ConfirmDialog from "./ConfirmDialog"
 
 function PlansView({
     plans,
@@ -14,6 +15,8 @@ function PlansView({
     onCreateExercise,
 }) {
     const [editing, setEditing] = useState(startNew ? "new" : null) // null, "new" или id
+    const [pendingDelete, setPendingDelete] = useState(null)
+    const [isDeleting, setIsDeleting] = useState(false)
     const [deleteError, setDeleteError] = useState(null)
 
     function exerciseName(id) {
@@ -30,15 +33,21 @@ function PlansView({
         setEditing(null)
     }
 
-    async function handleDelete(plan) {
-        const message = `Да изтрия ли графика „${plan.name}“? Записаните тренировки няма да се променят.`
-        if (!window.confirm(message)) return
+    function askDelete(plan) {
+        setDeleteError(null)
+        setPendingDelete(plan)
+    }
 
+    async function confirmDelete() {
+        setIsDeleting(true)
         setDeleteError(null)
         try {
-            await onDeletePlan(plan.id)
+            await onDeletePlan(pendingDelete.id)
+            setPendingDelete(null)
         } catch (err) {
             setDeleteError(userMessage(err))
+        } finally {
+            setIsDeleting(false)
         }
     }
 
@@ -57,7 +66,6 @@ function PlansView({
             </div>
 
             {error && <p className="text-sm text-red-500">{error}</p>}
-            {deleteError && <p className="text-sm text-red-500">{deleteError}</p>}
 
             {editing === "new" && (
                 <PlanForm
@@ -102,7 +110,7 @@ function PlansView({
                                     <Pencil size={18} />
                                 </button>
                                 <button
-                                    onClick={() => handleDelete(plan)}
+                                    onClick={() => askDelete(plan)}
                                     className="rounded-lg p-1.5 text-sky-400 transition hover:bg-sky-100 hover:text-red-400"
                                 >
                                     <Trash2 size={18} />
@@ -123,6 +131,21 @@ function PlansView({
                     </article>
                 )
             )}
+
+            {pendingDelete && (
+                <ConfirmDialog
+                    title="Изтриване на график?"
+                    message={`Графикът ще бъде изтрит. Записаните тренировки няма да се променят.`}
+                    confirmLabel="Изтрий"
+                    isBusy={isDeleting}
+                    error={deleteError}
+                    onConfirm={confirmDelete}
+                    onCancel={() => {
+                        if (!isDeleting) setPendingDelete(null)
+                    }}
+                />
+            )}
+
         </section>
     )
 }
