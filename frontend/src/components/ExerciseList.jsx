@@ -104,10 +104,6 @@ function ExerciseList({
                 )}
             </div>
 
-            {canCreate && (
-                <NewExerciseForm name={newName} onCreate={handleCreate} />
-            )}
-
             {!isSearching && (
                 <div className="mb-4 flex flex-wrap justify-center gap-2">
                     {groups.map((group) => (
@@ -166,6 +162,14 @@ function ExerciseList({
                     >
                         <ChevronRight size={20} />
                     </button>
+                </div>
+            )}
+
+
+
+            {canCreate && (
+                <div className="mt-4">
+                    <NewExerciseForm name={newName} onCreate={handleCreate} />
                 </div>
             )}
         </section>

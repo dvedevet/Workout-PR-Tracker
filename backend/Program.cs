@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -17,7 +18,8 @@ var connectionString =
         "Липсва connection string 'Supabase'. Задай го с dotnet user-secrets."
     );
 
-builder.Services.AddSingleton(NpgsqlDataSource.Create(connectionString));
+// DbContext се създава наново за всяка заявка (scoped)
+builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
 
 var app = builder.Build();
 
@@ -25,6 +27,10 @@ app.UseCors("Frontend");
 
 // Трябва да съвпада със списъка в базата (check) и в React (data/muscleGroups.js)
 var allowedGroups = new[] { "Гърди", "Гръб", "Крака", "Рамене", "Бицепс", "Трицепс" };
+
+// Грешките на базата идват като DbUpdateException; кодът е във вътрешната PostgresException
+static bool HasSqlState(Exception ex, string sqlState) =>
+    ex.InnerException is PostgresException pg && pg.SqlState == sqlState;
 
 string? ValidatePlan(PlanInput input, out string name, out int[] exerciseIds)
 {
@@ -38,57 +44,20 @@ string? ValidatePlan(PlanInput input, out string name, out int[] exerciseIds)
     return null;
 }
 
-async Task InsertPlanExercises(
-    NpgsqlConnection connection,
-    NpgsqlTransaction transaction,
-    int planId,
-    int[] exerciseIds
-)
-{
-    for (var i = 0; i < exerciseIds.Length; i++)
-    {
-        await using var command = new NpgsqlCommand(
-            @"insert into plan_exercises (plan_id, exercise_id, position)
-              values (@planId, @exerciseId, @position)",
-            connection,
-            transaction
-        );
-        command.Parameters.AddWithValue("planId", planId);
-        command.Parameters.AddWithValue("exerciseId", exerciseIds[i]);
-        command.Parameters.AddWithValue("position", i + 1);
-        await command.ExecuteNonQueryAsync();
-    }
-}
+// ---------- Упражнения ----------
 
 app.MapGet(
     "/api/exercises",
-    async (NpgsqlDataSource dataSource) =>
-    {
-        var exercises = new List<Exercise>();
-
-        await using var command = dataSource.CreateCommand(
-            "select id, name, muscle_groups from exercises order by id"
-        );
-        await using var reader = await command.ExecuteReaderAsync();
-
-        while (await reader.ReadAsync())
-        {
-            exercises.Add(
-                new Exercise(
-                    reader.GetInt32(0),
-                    reader.GetString(1),
-                    reader.GetFieldValue<string[]>(2)
-                )
-            );
-        }
-
-        return exercises;
-    }
+    async (AppDbContext db) =>
+        await db
+            .Exercises.OrderBy(e => e.Id)
+            .Select(e => new ExerciseDto(e.Id, e.Name, e.MuscleGroups))
+            .ToListAsync()
 );
 
 app.MapPost(
     "/api/exercises",
-    async (NewExercise input, NpgsqlDataSource dataSource) =>
+    async (NewExercise input, AppDbContext db) =>
     {
         var name = Regex.Replace((input.Name ?? "").Trim(), @"\s+", " ");
         if (name.Length == 0 || name.Length > 60)
@@ -98,80 +67,73 @@ app.MapPost(
         if (groups.Length == 0 || groups.Any(group => !allowedGroups.Contains(group)))
             return Results.BadRequest("Избери поне една валидна мускулна група.");
 
+        var exercise = new Exercise { Name = name, MuscleGroups = groups };
+        db.Exercises.Add(exercise);
+
         try
         {
-            await using var command = dataSource.CreateCommand(
-                "insert into exercises (name, muscle_groups) values (@name, @groups) returning id"
+            await db.SaveChangesAsync();
+            return Results.Created(
+                $"/api/exercises/{exercise.Id}",
+                new ExerciseDto(exercise.Id, exercise.Name, exercise.MuscleGroups)
             );
-            command.Parameters.AddWithValue("name", name);
-            command.Parameters.AddWithValue("groups", groups);
-            var id = (int)(await command.ExecuteScalarAsync())!;
-
-            return Results.Created($"/api/exercises/{id}", new Exercise(id, name, groups));
         }
-        catch (PostgresException ex) when (ex.SqlState == PostgresErrorCodes.UniqueViolation)
+        catch (DbUpdateException ex) when (HasSqlState(ex, PostgresErrorCodes.UniqueViolation))
         {
             return Results.Conflict("Упражнение с такова име вече съществува.");
         }
     }
 );
 
+// ---------- Тренировки ----------
+
 app.MapGet(
     "/api/workouts",
-    async (NpgsqlDataSource dataSource) =>
+    async (AppDbContext db) =>
     {
-        var workouts = new List<WorkoutDto>();
-
-        await using var command = dataSource.CreateCommand(
-            @"select w.id, w.workout_date, ws.exercise_id, e.name, e.muscle_groups,
-                 ws.weight, ws.reps
-          from workouts w
-          join workout_sets ws on ws.workout_id = w.id
-          join exercises e on e.id = ws.exercise_id
-          order by w.workout_date desc, w.id desc, ws.id"
-        );
-        await using var reader = await command.ExecuteReaderAsync();
-
-        WorkoutDto? currentWorkout = null;
-        WorkoutExerciseDto? currentExercise = null;
-
-        while (await reader.ReadAsync())
-        {
-            var workoutId = reader.GetInt32(0);
-            var exerciseId = reader.GetInt32(2);
-
-            if (currentWorkout is null || currentWorkout.Id != workoutId)
+        // Една заявка: тренировки със сериите си и данните на упражнението
+        var rows = await db
+            .Workouts.Where(w => w.Sets.Any())
+            .OrderByDescending(w => w.Date)
+            .ThenByDescending(w => w.Id)
+            .Select(w => new
             {
-                currentWorkout = new WorkoutDto(
-                    workoutId,
-                    reader.GetFieldValue<DateOnly>(1),
-                    new List<WorkoutExerciseDto>()
-                );
-                workouts.Add(currentWorkout);
-                currentExercise = null;
-            }
+                w.Id,
+                w.Date,
+                Sets = w
+                    .Sets.OrderBy(s => s.Id)
+                    .Select(s => new
+                    {
+                        s.ExerciseId,
+                        s.Exercise.Name,
+                        s.Exercise.MuscleGroups,
+                        s.Weight,
+                        s.Reps,
+                    })
+                    .ToList(),
+            })
+            .ToListAsync();
 
-            if (currentExercise is null || currentExercise.ExerciseId != exerciseId)
-            {
-                currentExercise = new WorkoutExerciseDto(
-                    exerciseId,
-                    reader.GetString(3),
-                    reader.GetFieldValue<string[]>(4),
-                    new List<SetDto>()
-                );
-                currentWorkout.Exercises.Add(currentExercise);
-            }
-
-            currentExercise.Sets.Add(new SetDto(reader.GetDecimal(5), reader.GetInt32(6)));
-        }
-
-        return workouts;
+        // Групирането по упражнение става в паметта (чист LINQ върху списък)
+        return rows.Select(w => new WorkoutDto(
+                w.Id,
+                w.Date,
+                w.Sets.GroupBy(s => s.ExerciseId)
+                    .Select(g => new WorkoutExerciseDto(
+                        g.Key,
+                        g.First().Name,
+                        g.First().MuscleGroups,
+                        g.Select(s => new SetDto(s.Weight, s.Reps)).ToList()
+                    ))
+                    .ToList()
+            ))
+            .ToList();
     }
 );
 
 app.MapPost(
     "/api/workouts",
-    async (NewWorkout workout, NpgsqlDataSource dataSource) =>
+    async (NewWorkout workout, AppDbContext db) =>
     {
         if (workout.Date == default)
             return Results.BadRequest("Липсва дата на тренировката.");
@@ -192,118 +154,97 @@ app.MapPost(
                 "Тежестта трябва да е между 0 и 9999.99, а повторенията - над 0."
             );
 
-        await using var connection = await dataSource.OpenConnectionAsync();
-        await using var transaction = await connection.BeginTransactionAsync();
+        var entity = new Workout
+        {
+            Date = workout.Date,
+            Sets = workout
+                .Exercises.SelectMany(exercise =>
+                    exercise.Sets.Select(
+                        (set, index) =>
+                            new WorkoutSet
+                            {
+                                ExerciseId = exercise.ExerciseId,
+                                SetNumber = index + 1,
+                                Weight = set.Weight,
+                                Reps = set.Reps,
+                            }
+                    )
+                )
+                .ToList(),
+        };
+        db.Workouts.Add(entity);
 
         try
         {
-            await using var workoutCommand = new NpgsqlCommand(
-                "insert into workouts (workout_date) values (@date) returning id",
-                connection,
-                transaction
-            );
-            workoutCommand.Parameters.AddWithValue("date", workout.Date);
-            var workoutId = (int)(await workoutCommand.ExecuteScalarAsync())!;
-
-            foreach (var exercise in workout.Exercises)
-            {
-                var setNumber = 1;
-                foreach (var set in exercise.Sets)
-                {
-                    await using var setCommand = new NpgsqlCommand(
-                        @"insert into workout_sets
-                          (workout_id, exercise_id, set_number, weight, reps)
-                      values (@workoutId, @exerciseId, @setNumber, @weight, @reps)",
-                        connection,
-                        transaction
-                    );
-                    setCommand.Parameters.AddWithValue("workoutId", workoutId);
-                    setCommand.Parameters.AddWithValue("exerciseId", exercise.ExerciseId);
-                    setCommand.Parameters.AddWithValue("setNumber", setNumber);
-                    setCommand.Parameters.AddWithValue("weight", set.Weight);
-                    setCommand.Parameters.AddWithValue("reps", set.Reps);
-                    await setCommand.ExecuteNonQueryAsync();
-                    setNumber++;
-                }
-            }
-
-            await transaction.CommitAsync();
-            return Results.Created($"/api/workouts/{workoutId}", new { id = workoutId });
+            // Един SaveChanges = една транзакция: или всичко, или нищо
+            await db.SaveChangesAsync();
+            return Results.Created($"/api/workouts/{entity.Id}", new { id = entity.Id });
         }
-        catch (PostgresException ex) when (ex.SqlState == PostgresErrorCodes.ForeignKeyViolation)
+        catch (DbUpdateException ex) when (HasSqlState(ex, PostgresErrorCodes.ForeignKeyViolation))
         {
             return Results.BadRequest("Има упражнение, което не съществува.");
         }
     }
 );
 
+app.MapDelete(
+    "/api/workouts/{id:int}",
+    async (int id, AppDbContext db) =>
+    {
+        // Сериите се трият от базата (on delete cascade)
+        var rows = await db.Workouts.Where(w => w.Id == id).ExecuteDeleteAsync();
+        return rows == 0 ? Results.NotFound() : Results.NoContent();
+    }
+);
+
+// ---------- Графици ----------
+
 app.MapGet(
     "/api/plans",
-    async (NpgsqlDataSource dataSource) =>
-    {
-        var plans = new List<PlanDto>();
-
-        await using var command = dataSource.CreateCommand(
-            @"select p.id, p.name, pe.exercise_id
-          from plans p
-          left join plan_exercises pe on pe.plan_id = p.id
-          order by p.id, pe.position"
-        );
-        await using var reader = await command.ExecuteReaderAsync();
-
-        while (await reader.ReadAsync())
-        {
-            var planId = reader.GetInt32(0);
-            var plan = plans.LastOrDefault();
-
-            if (plan is null || plan.Id != planId)
-            {
-                plan = new PlanDto(planId, reader.GetString(1), new List<int>());
-                plans.Add(plan);
-            }
-
-            if (!reader.IsDBNull(2))
-                plan.ExerciseIds.Add(reader.GetInt32(2));
-        }
-
-        return plans;
-    }
+    async (AppDbContext db) =>
+        await db
+            .Plans.OrderBy(p => p.Id)
+            .Select(p => new PlanDto(
+                p.Id,
+                p.Name,
+                p.Exercises.OrderBy(pe => pe.Position).Select(pe => pe.ExerciseId).ToList()
+            ))
+            .ToListAsync()
 );
 
 app.MapPost(
     "/api/plans",
-    async (PlanInput input, NpgsqlDataSource dataSource) =>
+    async (PlanInput input, AppDbContext db) =>
     {
         var error = ValidatePlan(input, out var name, out var exerciseIds);
         if (error is not null)
             return Results.BadRequest(error);
 
-        await using var connection = await dataSource.OpenConnectionAsync();
-        await using var transaction = await connection.BeginTransactionAsync();
+        var plan = new Plan
+        {
+            Name = name,
+            Exercises = exerciseIds
+                .Select(
+                    (exerciseId, index) =>
+                        new PlanExercise { ExerciseId = exerciseId, Position = index + 1 }
+                )
+                .ToList(),
+        };
+        db.Plans.Add(plan);
 
         try
         {
-            await using var planCommand = new NpgsqlCommand(
-                "insert into plans (name) values (@name) returning id",
-                connection,
-                transaction
-            );
-            planCommand.Parameters.AddWithValue("name", name);
-            var planId = (int)(await planCommand.ExecuteScalarAsync())!;
-
-            await InsertPlanExercises(connection, transaction, planId, exerciseIds);
-
-            await transaction.CommitAsync();
+            await db.SaveChangesAsync();
             return Results.Created(
-                $"/api/plans/{planId}",
-                new PlanDto(planId, name, exerciseIds.ToList())
+                $"/api/plans/{plan.Id}",
+                new PlanDto(plan.Id, plan.Name, exerciseIds.ToList())
             );
         }
-        catch (PostgresException ex) when (ex.SqlState == PostgresErrorCodes.UniqueViolation)
+        catch (DbUpdateException ex) when (HasSqlState(ex, PostgresErrorCodes.UniqueViolation))
         {
             return Results.Conflict("График с такова име вече съществува.");
         }
-        catch (PostgresException ex) when (ex.SqlState == PostgresErrorCodes.ForeignKeyViolation)
+        catch (DbUpdateException ex) when (HasSqlState(ex, PostgresErrorCodes.ForeignKeyViolation))
         {
             return Results.BadRequest("Има упражнение, което не съществува.");
         }
@@ -312,45 +253,46 @@ app.MapPost(
 
 app.MapPut(
     "/api/plans/{id:int}",
-    async (int id, PlanInput input, NpgsqlDataSource dataSource) =>
+    async (int id, PlanInput input, AppDbContext db) =>
     {
         var error = ValidatePlan(input, out var name, out var exerciseIds);
         if (error is not null)
             return Results.BadRequest(error);
 
-        await using var connection = await dataSource.OpenConnectionAsync();
-        await using var transaction = await connection.BeginTransactionAsync();
+        // ExecuteDelete тръгва веднага, затова обгръщаме всичко в ръчна транзакция
+        await using var transaction = await db.Database.BeginTransactionAsync();
 
         try
         {
-            await using var updateCommand = new NpgsqlCommand(
-                "update plans set name = @name where id = @id",
-                connection,
-                transaction
-            );
-            updateCommand.Parameters.AddWithValue("name", name);
-            updateCommand.Parameters.AddWithValue("id", id);
-            if (await updateCommand.ExecuteNonQueryAsync() == 0)
+            var plan = await db.Plans.FindAsync(id);
+            if (plan is null)
                 return Results.NotFound();
 
-            await using var deleteCommand = new NpgsqlCommand(
-                "delete from plan_exercises where plan_id = @id",
-                connection,
-                transaction
-            );
-            deleteCommand.Parameters.AddWithValue("id", id);
-            await deleteCommand.ExecuteNonQueryAsync();
+            plan.Name = name;
 
-            await InsertPlanExercises(connection, transaction, id, exerciseIds);
+            await db.PlanExercises.Where(pe => pe.PlanId == id).ExecuteDeleteAsync();
 
+            for (var i = 0; i < exerciseIds.Length; i++)
+            {
+                db.PlanExercises.Add(
+                    new PlanExercise
+                    {
+                        PlanId = id,
+                        ExerciseId = exerciseIds[i],
+                        Position = i + 1,
+                    }
+                );
+            }
+
+            await db.SaveChangesAsync();
             await transaction.CommitAsync();
             return Results.Ok(new PlanDto(id, name, exerciseIds.ToList()));
         }
-        catch (PostgresException ex) when (ex.SqlState == PostgresErrorCodes.UniqueViolation)
+        catch (DbUpdateException ex) when (HasSqlState(ex, PostgresErrorCodes.UniqueViolation))
         {
             return Results.Conflict("График с такова име вече съществува.");
         }
-        catch (PostgresException ex) when (ex.SqlState == PostgresErrorCodes.ForeignKeyViolation)
+        catch (DbUpdateException ex) when (HasSqlState(ex, PostgresErrorCodes.ForeignKeyViolation))
         {
             return Results.BadRequest("Има упражнение, което не съществува.");
         }
@@ -359,34 +301,11 @@ app.MapPut(
 
 app.MapDelete(
     "/api/plans/{id:int}",
-    async (int id, NpgsqlDataSource dataSource) =>
+    async (int id, AppDbContext db) =>
     {
-        await using var command = dataSource.CreateCommand("delete from plans where id = @id");
-        command.Parameters.AddWithValue("id", id);
-        var rows = await command.ExecuteNonQueryAsync();
-
+        var rows = await db.Plans.Where(p => p.Id == id).ExecuteDeleteAsync();
         return rows == 0 ? Results.NotFound() : Results.NoContent();
     }
 );
 
 app.Run();
-
-record Exercise(int Id, string Name, string[] MuscleGroups);
-
-record NewExercise(string Name, List<string> MuscleGroups);
-
-record WorkoutDto(int Id, DateOnly Date, List<WorkoutExerciseDto> Exercises);
-
-record WorkoutExerciseDto(int ExerciseId, string Name, string[] MuscleGroups, List<SetDto> Sets);
-
-record SetDto(decimal Weight, int Reps);
-
-record NewWorkout(DateOnly Date, List<NewWorkoutExercise> Exercises);
-
-record NewWorkoutExercise(int ExerciseId, List<NewSet> Sets);
-
-record NewSet(decimal Weight, int Reps);
-
-record PlanDto(int Id, string Name, List<int> ExerciseIds);
-
-record PlanInput(string Name, List<int> ExerciseIds);

@@ -150,10 +150,6 @@ function PlanForm({ plan, exercises, onSave, onCancel, onCreateExercise }) {
                 className="mb-2 w-full rounded-xl border border-sky-200 bg-white/80 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-300"
             />
 
-            {canCreate && (
-                <NewExerciseForm name={newName} onCreate={handleCreateExercise} />
-            )}
-
             {alreadyAdded && (
                 <p className="mb-2 text-xs text-slate-500">
                     „{exactMatch.name}“ вече е в графика.
@@ -176,6 +172,10 @@ function PlanForm({ plan, exercises, onSave, onCancel, onCreateExercise }) {
                         </li>
                     ))}
                 </ul>
+            )}
+
+            {canCreate && (
+                <NewExerciseForm name={newName} onCreate={handleCreateExercise} />
             )}
 
             {error && <p className="mt-3 text-sm text-red-500">{error}</p>}

@@ -19,6 +19,7 @@ import {
   getWorkouts,
   saveWorkout,
   updatePlan,
+  deleteWorkout
 } from "./api"
 
 const tabs = [
@@ -112,6 +113,11 @@ function App() {
     setPlans((current) => current.filter((plan) => plan.id !== id))
   }
 
+  async function handleDeleteWorkout(id) {
+    await deleteWorkout(id)
+    setHistory((current) => current.filter((workout) => workout.id !== id))
+  }
+
   function handleLoadPlan(planId) {
     const plan = plans.find((item) => item.id === planId)
     if (!plan) {
@@ -172,6 +178,8 @@ function App() {
       setHistory(await getWorkouts())
       setLoadError(null)
       setSets([])
+      setSelectedExercise(null)
+      setActivePlan(null)
       setActivePlan(null)
       setSaveError(null)
     } catch {
@@ -253,7 +261,9 @@ function App() {
           />
         )}
 
-        {view === "history" && <HistoryView history={history} />}
+        {view === "history" && (
+          <HistoryView history={history} onDelete={handleDeleteWorkout} />
+        )}
         {view === "progress" && <ProgressView history={history} />}
       </div>
     </div>

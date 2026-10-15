@@ -79,3 +79,7 @@ export async function updatePlan(id, name, exerciseIds) {
 export async function deletePlan(id) {
     await request(`/api/plans/${id}`, { method: "DELETE" })
 }
+
+export async function deleteWorkout(id) {
+    await request(`/api/workouts/${id}`, { method: "DELETE" })
+}

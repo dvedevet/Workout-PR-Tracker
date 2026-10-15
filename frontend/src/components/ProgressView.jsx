@@ -91,8 +91,7 @@ function ProgressView({ history }) {
     if (trained.length === 0) {
         return (
             <section className="rounded-3xl border border-white/60 bg-white/60 p-6 text-sky-700 shadow-lg backdrop-blur-md">
-                Още няма записани тренировки. Завърши една, за да видиш прогреса си.
-            </section>
+                Още няма записани тренировки. Завърши тренировка, за да можеш да следиш прогреса си.            </section>
         )
     }
 

@@ -101,16 +101,21 @@ function SessionBoard({
                 </div>
             )}
 
-            {sets.length > 0 && (
+            {(sets.length > 0 || activePlan) && (
                 <>
                     <button
                         onClick={onFinish}
-                        disabled={isSaving}
+                        disabled={isSaving || sets.length === 0}
                         className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-sky-600 px-4 py-2.5 font-medium text-white shadow transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                         <Check size={18} />
                         {isSaving ? "Запазване..." : "Завърши тренировката"}
                     </button>
+                    {sets.length === 0 && (
+                        <p className="mt-2 text-center text-xs text-slate-500">
+                            Добави поне една серия, за да завършиш тренировката.
+                        </p>
+                    )}
                     {saveError && (
                         <p className="mt-2 text-center text-sm text-red-500">{saveError}</p>
                     )}
@@ -120,4 +125,4 @@ function SessionBoard({
     )
 }
 
-export default SessionBoard
+export default SessionBoard 
