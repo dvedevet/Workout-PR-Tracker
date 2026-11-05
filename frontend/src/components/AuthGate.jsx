@@ -32,7 +32,9 @@ function AuthGate({ children }) {
     return (
         <>
             <div className="mx-auto flex max-w-5xl items-center justify-end gap-3 px-4 pt-4 text-sm">
-                <span className="truncate text-slate-500">{session.user.email}</span>
+                <span className="truncate text-slate-500">
+                    {session.user.user_metadata?.full_name || session.user.email}
+                </span>
                 <button
                     onClick={() => supabase.auth.signOut()}
                     className="flex shrink-0 items-center gap-1 rounded-full bg-white/70 px-3 py-1.5 font-medium text-sky-700 transition hover:bg-sky-100"
