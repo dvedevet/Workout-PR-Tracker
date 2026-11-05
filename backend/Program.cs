@@ -7,11 +7,14 @@ using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Кои адреси на фронтенда имат право да викат API-то (от настройките)
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(
         "Frontend",
-        policy => policy.WithOrigins("http://localhost:5173").AllowAnyHeader().AllowAnyMethod()
+        policy => policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod()
     );
 });
 

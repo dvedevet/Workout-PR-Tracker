@@ -1,6 +1,10 @@
 import { supabase } from "./supabase"
 
-const API_URL = "http://localhost:5146"
+const API_URL = (import.meta.env.VITE_API_URL ?? "").replace(/\/+$/, "")
+
+if (!API_URL) {
+    throw new Error("Липсва VITE_API_URL във frontend/.env")
+}
 
 export class ApiError extends Error { }
 
