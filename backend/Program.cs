@@ -1,5 +1,8 @@
+using System.Security.Claims;
 using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -21,9 +24,45 @@ var connectionString =
 // DbContext се създава наново за всяка заявка (scoped)
 builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
 
+var supabaseUrl =
+    builder.Configuration["Supabase:Url"]
+    ?? throw new InvalidOperationException("Липсва Supabase:Url в appsettings.json");
+var issuer = $"{supabaseUrl}/auth/v1";
+var keys = new SupabaseKeys($"{issuer}/.well-known/jwks.json");
+
+builder
+    .Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.MapInboundClaims = false; // оставя "sub" като "sub"
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = issuer,
+            ValidateAudience = true,
+            ValidAudience = "authenticated",
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKeyResolver = (token, securityToken, kid, parameters) => keys.Get(kid),
+        };
+    });
+builder.Services.AddAuthorization();
+
 var app = builder.Build();
 
 app.UseCors("Frontend");
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+// Всички ендпойнти в групата изискват валиден токен
+var api = app.MapGroup("/api").RequireAuthorization();
+
+api.MapGet(
+    "/me",
+    (ClaimsPrincipal user) =>
+        new { id = user.FindFirstValue("sub"), email = user.FindFirstValue("email") }
+);
 
 // Трябва да съвпада със списъка в базата (check) и в React (data/muscleGroups.js)
 var allowedGroups = new[] { "Гърди", "Гръб", "Крака", "Рамене", "Бицепс", "Трицепс" };
@@ -46,8 +85,8 @@ string? ValidatePlan(PlanInput input, out string name, out int[] exerciseIds)
 
 // ---------- Упражнения ----------
 
-app.MapGet(
-    "/api/exercises",
+api.MapGet(
+    "/exercises",
     async (AppDbContext db) =>
         await db
             .Exercises.OrderBy(e => e.Id)
@@ -55,8 +94,8 @@ app.MapGet(
             .ToListAsync()
 );
 
-app.MapPost(
-    "/api/exercises",
+api.MapPost(
+    "/exercises",
     async (NewExercise input, AppDbContext db) =>
     {
         var name = Regex.Replace((input.Name ?? "").Trim(), @"\s+", " ");
@@ -85,8 +124,8 @@ app.MapPost(
     }
 );
 
-app.MapGet(
-    "/api/exercises/{id:int}/progress",
+api.MapGet(
+    "/exercises/{id:int}/progress",
     async (int id, AppDbContext db) =>
     {
         if (!await db.Exercises.AnyAsync(e => e.Id == id))
@@ -106,8 +145,8 @@ app.MapGet(
 
 // ---------- Тренировки ----------
 
-app.MapGet(
-    "/api/workouts",
+api.MapGet(
+    "/workouts",
     async (AppDbContext db) =>
     {
         // Една заявка: тренировки със сериите си и данните на упражнението
@@ -150,8 +189,8 @@ app.MapGet(
     }
 );
 
-app.MapPost(
-    "/api/workouts",
+api.MapPost(
+    "/workouts",
     async (NewWorkout workout, AppDbContext db) =>
     {
         if (workout.Date == default)
@@ -206,8 +245,8 @@ app.MapPost(
     }
 );
 
-app.MapDelete(
-    "/api/workouts/{id:int}",
+api.MapDelete(
+    "/workouts/{id:int}",
     async (int id, AppDbContext db) =>
     {
         // Сериите се трият от базата (on delete cascade)
@@ -218,8 +257,8 @@ app.MapDelete(
 
 // ---------- Графици ----------
 
-app.MapGet(
-    "/api/plans",
+api.MapGet(
+    "/plans",
     async (AppDbContext db) =>
         await db
             .Plans.OrderBy(p => p.Id)
@@ -231,8 +270,8 @@ app.MapGet(
             .ToListAsync()
 );
 
-app.MapPost(
-    "/api/plans",
+api.MapPost(
+    "/plans",
     async (PlanInput input, AppDbContext db) =>
     {
         var error = ValidatePlan(input, out var name, out var exerciseIds);
@@ -270,8 +309,8 @@ app.MapPost(
     }
 );
 
-app.MapPut(
-    "/api/plans/{id:int}",
+api.MapPut(
+    "/plans/{id:int}",
     async (int id, PlanInput input, AppDbContext db) =>
     {
         var error = ValidatePlan(input, out var name, out var exerciseIds);
@@ -318,8 +357,8 @@ app.MapPut(
     }
 );
 
-app.MapDelete(
-    "/api/plans/{id:int}",
+api.MapDelete(
+    "/plans/{id:int}",
     async (int id, AppDbContext db) =>
     {
         var rows = await db.Plans.Where(p => p.Id == id).ExecuteDeleteAsync();

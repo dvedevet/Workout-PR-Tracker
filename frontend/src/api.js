@@ -1,3 +1,5 @@
+import { supabase } from "./supabase"
+
 const API_URL = "http://localhost:5146"
 
 export class ApiError extends Error { }
@@ -19,8 +21,25 @@ async function readError(response) {
     return `Грешка от API: (${response.status}).`
 }
 
-async function request(path, options) {
-    const response = await fetch(`${API_URL}${path}`, options)
+async function request(path, options = {}) {
+    // getSession дава текущата сесия и сам подновява изтекъл токен
+    const { data } = await supabase.auth.getSession()
+    const token = data.session?.access_token
+
+    const response = await fetch(`${API_URL}${path}`, {
+        ...options,
+        headers: {
+            ...options.headers,
+            ...(token && { Authorization: `Bearer ${token}` }),
+        },
+    })
+
+    // 401 = токенът липсва или не е валиден: връщаме потребителя към входа
+    if (response.status === 401) {
+        await supabase.auth.signOut()
+        throw new ApiError("Сесията ти изтече. Влез отново.")
+    }
+
     if (!response.ok) {
         throw new ApiError(await readError(response))
     }
