@@ -1,6 +1,6 @@
-
 public class Exercise
 {
+    public Guid? UserId { get; set; }
     public int Id { get; set; }
     public string Name { get; set; } = "";
     public string[] MuscleGroups { get; set; } = [];
@@ -8,6 +8,7 @@ public class Exercise
 
 public class Workout
 {
+    public Guid UserId { get; set; }
     public int Id { get; set; }
     public DateOnly Date { get; set; }
     public List<WorkoutSet> Sets { get; set; } = [];
@@ -26,6 +27,7 @@ public class WorkoutSet
 
 public class Plan
 {
+    public Guid UserId { get; set; }
     public int Id { get; set; }
     public string Name { get; set; } = "";
     public List<PlanExercise> Exercises { get; set; } = [];

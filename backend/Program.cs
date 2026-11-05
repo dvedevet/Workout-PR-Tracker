@@ -21,7 +21,6 @@ var connectionString =
         "Липсва connection string 'Supabase'. Задай го с dotnet user-secrets."
     );
 
-// DbContext се създава наново за всяка заявка (scoped)
 builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
 
 var supabaseUrl =
@@ -34,7 +33,7 @@ builder
     .Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        options.MapInboundClaims = false; // оставя "sub" като "sub"
+        options.MapInboundClaims = false;
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
@@ -55,7 +54,6 @@ app.UseCors("Frontend");
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Всички ендпойнти в групата изискват валиден токен
 var api = app.MapGroup("/api").RequireAuthorization();
 
 api.MapGet(
@@ -64,12 +62,17 @@ api.MapGet(
         new { id = user.FindFirstValue("sub"), email = user.FindFirstValue("email") }
 );
 
-// Трябва да съвпада със списъка в базата (check) и в React (data/muscleGroups.js)
 var allowedGroups = new[] { "Гърди", "Гръб", "Крака", "Рамене", "Бицепс", "Трицепс" };
 
-// Грешките на базата идват като DbUpdateException; кодът е във вътрешната PostgresException
 static bool HasSqlState(Exception ex, string sqlState) =>
     ex.InnerException is PostgresException pg && pg.SqlState == sqlState;
+
+static Guid GetUserId(ClaimsPrincipal user) => Guid.Parse(user.FindFirstValue("sub")!);
+
+static async Task<bool> AllExercisesVisible(AppDbContext db, Guid userId, int[] exerciseIds) =>
+    await db.Exercises.CountAsync(e =>
+        exerciseIds.Contains(e.Id) && (e.UserId == null || e.UserId == userId)
+    ) == exerciseIds.Length;
 
 string? ValidatePlan(PlanInput input, out string name, out int[] exerciseIds)
 {
@@ -83,21 +86,24 @@ string? ValidatePlan(PlanInput input, out string name, out int[] exerciseIds)
     return null;
 }
 
-// ---------- Упражнения ----------
-
 api.MapGet(
     "/exercises",
-    async (AppDbContext db) =>
-        await db
-            .Exercises.OrderBy(e => e.Id)
+    async (ClaimsPrincipal user, AppDbContext db) =>
+    {
+        var userId = GetUserId(user);
+        return await db
+            .Exercises.Where(e => e.UserId == null || e.UserId == userId)
+            .OrderBy(e => e.Id)
             .Select(e => new ExerciseDto(e.Id, e.Name, e.MuscleGroups))
-            .ToListAsync()
+            .ToListAsync();
+    }
 );
 
 api.MapPost(
     "/exercises",
-    async (NewExercise input, AppDbContext db) =>
+    async (NewExercise input, ClaimsPrincipal user, AppDbContext db) =>
     {
+        var userId = GetUserId(user);
         var name = Regex.Replace((input.Name ?? "").Trim(), @"\s+", " ");
         if (name.Length == 0 || name.Length > 60)
             return Results.BadRequest("Името трябва да е между 1 и 60 символа.");
@@ -106,7 +112,20 @@ api.MapPost(
         if (groups.Length == 0 || groups.Any(group => !allowedGroups.Contains(group)))
             return Results.BadRequest("Избери поне една валидна мускулна група.");
 
-        var exercise = new Exercise { Name = name, MuscleGroups = groups };
+        var nameLower = name.ToLower();
+        if (
+            await db.Exercises.AnyAsync(e =>
+                (e.UserId == null || e.UserId == userId) && e.Name.ToLower() == nameLower
+            )
+        )
+            return Results.Conflict("Упражнение с такова име вече съществува.");
+
+        var exercise = new Exercise
+        {
+            Name = name,
+            MuscleGroups = groups,
+            UserId = userId,
+        };
         db.Exercises.Add(exercise);
 
         try
@@ -126,14 +145,15 @@ api.MapPost(
 
 api.MapGet(
     "/exercises/{id:int}/progress",
-    async (int id, AppDbContext db) =>
+    async (int id, ClaimsPrincipal user, AppDbContext db) =>
     {
-        if (!await db.Exercises.AnyAsync(e => e.Id == id))
+        var userId = GetUserId(user);
+        if (!await AllExercisesVisible(db, userId, [id]))
             return Results.NotFound();
 
-        // Всички серии на упражнението, заедно с датата на тренировката
         var rows = await db
-            .Workouts.SelectMany(w =>
+            .Workouts.Where(w => w.UserId == userId)
+            .SelectMany(w =>
                 w.Sets.Where(s => s.ExerciseId == id)
                     .Select(s => new SetRow(w.Date, s.Weight, s.Reps))
             )
@@ -143,15 +163,13 @@ api.MapGet(
     }
 );
 
-// ---------- Тренировки ----------
-
 api.MapGet(
     "/workouts",
-    async (AppDbContext db) =>
+    async (ClaimsPrincipal user, AppDbContext db) =>
     {
-        // Една заявка: тренировки със сериите си и данните на упражнението
+        var userId = GetUserId(user);
         var rows = await db
-            .Workouts.Where(w => w.Sets.Any())
+            .Workouts.Where(w => w.UserId == userId && w.Sets.Any())
             .OrderByDescending(w => w.Date)
             .ThenByDescending(w => w.Id)
             .Select(w => new
@@ -172,7 +190,6 @@ api.MapGet(
             })
             .ToListAsync();
 
-        // Групирането по упражнение става в паметта (чист LINQ върху списък)
         return rows.Select(w => new WorkoutDto(
                 w.Id,
                 w.Date,
@@ -191,8 +208,9 @@ api.MapGet(
 
 api.MapPost(
     "/workouts",
-    async (NewWorkout workout, AppDbContext db) =>
+    async (NewWorkout workout, ClaimsPrincipal user, AppDbContext db) =>
     {
+        var userId = GetUserId(user);
         if (workout.Date == default)
             return Results.BadRequest("Липсва дата на тренировката.");
 
@@ -212,8 +230,13 @@ api.MapPost(
                 "Тежестта трябва да е между 0 и 9999.99, а повторенията - над 0."
             );
 
+        var usedIds = workout.Exercises.Select(e => e.ExerciseId).Distinct().ToArray();
+        if (!await AllExercisesVisible(db, userId, usedIds))
+            return Results.BadRequest("Има упражнение, което не съществува.");
+
         var entity = new Workout
         {
+            UserId = userId,
             Date = workout.Date,
             Sets = workout
                 .Exercises.SelectMany(exercise =>
@@ -234,7 +257,6 @@ api.MapPost(
 
         try
         {
-            // Един SaveChanges = една транзакция: или всичко, или нищо
             await db.SaveChangesAsync();
             return Results.Created($"/api/workouts/{entity.Id}", new { id = entity.Id });
         }
@@ -247,39 +269,48 @@ api.MapPost(
 
 api.MapDelete(
     "/workouts/{id:int}",
-    async (int id, AppDbContext db) =>
+    async (int id, ClaimsPrincipal user, AppDbContext db) =>
     {
-        // Сериите се трият от базата (on delete cascade)
-        var rows = await db.Workouts.Where(w => w.Id == id).ExecuteDeleteAsync();
+        var userId = GetUserId(user);
+        var rows = await db
+            .Workouts.Where(w => w.Id == id && w.UserId == userId)
+            .ExecuteDeleteAsync();
         return rows == 0 ? Results.NotFound() : Results.NoContent();
     }
 );
 
-// ---------- Графици ----------
-
 api.MapGet(
     "/plans",
-    async (AppDbContext db) =>
-        await db
-            .Plans.OrderBy(p => p.Id)
+    async (ClaimsPrincipal user, AppDbContext db) =>
+    {
+        var userId = GetUserId(user);
+        return await db
+            .Plans.Where(p => p.UserId == userId)
+            .OrderBy(p => p.Id)
             .Select(p => new PlanDto(
                 p.Id,
                 p.Name,
                 p.Exercises.OrderBy(pe => pe.Position).Select(pe => pe.ExerciseId).ToList()
             ))
-            .ToListAsync()
+            .ToListAsync();
+    }
 );
 
 api.MapPost(
     "/plans",
-    async (PlanInput input, AppDbContext db) =>
+    async (PlanInput input, ClaimsPrincipal user, AppDbContext db) =>
     {
+        var userId = GetUserId(user);
         var error = ValidatePlan(input, out var name, out var exerciseIds);
         if (error is not null)
             return Results.BadRequest(error);
 
+        if (!await AllExercisesVisible(db, userId, exerciseIds))
+            return Results.BadRequest("Има упражнение, което не съществува.");
+
         var plan = new Plan
         {
+            UserId = userId,
             Name = name,
             Exercises = exerciseIds
                 .Select(
@@ -311,18 +342,21 @@ api.MapPost(
 
 api.MapPut(
     "/plans/{id:int}",
-    async (int id, PlanInput input, AppDbContext db) =>
+    async (int id, PlanInput input, ClaimsPrincipal user, AppDbContext db) =>
     {
+        var userId = GetUserId(user);
         var error = ValidatePlan(input, out var name, out var exerciseIds);
         if (error is not null)
             return Results.BadRequest(error);
 
-        // ExecuteDelete тръгва веднага, затова обгръщаме всичко в ръчна транзакция
+        if (!await AllExercisesVisible(db, userId, exerciseIds))
+            return Results.BadRequest("Има упражнение, което не съществува.");
+
         await using var transaction = await db.Database.BeginTransactionAsync();
 
         try
         {
-            var plan = await db.Plans.FindAsync(id);
+            var plan = await db.Plans.FirstOrDefaultAsync(p => p.Id == id && p.UserId == userId);
             if (plan is null)
                 return Results.NotFound();
 
@@ -359,9 +393,10 @@ api.MapPut(
 
 api.MapDelete(
     "/plans/{id:int}",
-    async (int id, AppDbContext db) =>
+    async (int id, ClaimsPrincipal user, AppDbContext db) =>
     {
-        var rows = await db.Plans.Where(p => p.Id == id).ExecuteDeleteAsync();
+        var userId = GetUserId(user);
+        var rows = await db.Plans.Where(p => p.Id == id && p.UserId == userId).ExecuteDeleteAsync();
         return rows == 0 ? Results.NotFound() : Results.NoContent();
     }
 );

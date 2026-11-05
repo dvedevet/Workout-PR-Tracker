@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
     public DbSet<Exercise> Exercises => Set<Exercise>();
@@ -13,6 +14,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         {
             e.ToTable("exercises");
             e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.UserId).HasColumnName("user_id");
             e.Property(x => x.Name).HasColumnName("name");
             e.Property(x => x.MuscleGroups).HasColumnName("muscle_groups");
         });
@@ -21,6 +23,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         {
             e.ToTable("workouts");
             e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.UserId).HasColumnName("user_id");
             e.Property(x => x.Date).HasColumnName("workout_date");
             e.HasMany(x => x.Sets)
                 .WithOne()
@@ -47,6 +50,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         {
             e.ToTable("plans");
             e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.UserId).HasColumnName("user_id");
             e.Property(x => x.Name).HasColumnName("name");
             e.HasMany(x => x.Exercises)
                 .WithOne()
