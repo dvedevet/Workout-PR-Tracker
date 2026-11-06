@@ -11,7 +11,6 @@ function formatDate(isoDate) {
     })
 }
 
-// Име на тренировката: основните групи на упражненията, без повторения
 function getWorkoutName(workout) {
     const groups = workout.exercises.map((exercise) => exercise.muscleGroups[0])
     return [...new Set(groups)].join(" + ")
@@ -19,7 +18,7 @@ function getWorkoutName(workout) {
 
 function HistoryView({ history, onDelete }) {
     const [openId, setOpenId] = useState(null)
-    const [pending, setPending] = useState(null) // тренировката, която чака потвърждение
+    const [pending, setPending] = useState(null) 
     const [isDeleting, setIsDeleting] = useState(false)
     const [error, setError] = useState(null)
 

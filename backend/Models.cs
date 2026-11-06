@@ -39,3 +39,11 @@ public class PlanExercise
     public int ExerciseId { get; set; }
     public int Position { get; set; }
 }
+
+public class UserProfile
+{
+    public Guid UserId { get; set; }
+    public decimal? WeightKg { get; set; }
+    public int? HeightCm { get; set; }
+    public string? Photo { get; set; }
+}

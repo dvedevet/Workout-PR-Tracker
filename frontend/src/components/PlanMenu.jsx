@@ -5,7 +5,6 @@ function PlanMenu({ plans, activePlan, onLoad, onClear, onGoToPlans }) {
     const [isOpen, setIsOpen] = useState(false)
     const menuRef = useRef(null)
 
-    // Затваряне при клик извън менюто или с Esc
     useEffect(() => {
         function handlePointerDown(e) {
             if (menuRef.current && !menuRef.current.contains(e.target)) {

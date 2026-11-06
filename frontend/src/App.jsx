@@ -1,15 +1,20 @@
 import { useEffect, useState } from "react"
+
 import {
   ClipboardList,
   Dumbbell,
   History as HistoryIcon,
   TrendingUp,
+  User,
 } from "lucide-react"
+
 import ExerciseList from "./components/ExerciseList"
 import PlansView from "./components/PlansView"
 import SessionBoard from "./components/SessionBoard"
 import HistoryView from "./components/HistoryView"
 import ProgressView from "./components/ProgressView"
+import ProfileView from "./components/ProfileView"
+
 import {
   createExercise,
   createPlan,
@@ -27,6 +32,7 @@ const tabs = [
   { id: "plans", label: "График", icon: ClipboardList },
   { id: "history", label: "История", icon: HistoryIcon },
   { id: "progress", label: "Прогрес", icon: TrendingUp },
+  { id: "profile", label: "Профил", icon: User },
 ]
 
 function App() {
@@ -125,7 +131,6 @@ function App() {
       return
     }
 
-    // Тренировката получава КОПИЕ на списъка, за да не променя графика
     setActivePlan({
       id: plan.id,
       name: plan.name,
@@ -180,7 +185,6 @@ function App() {
       setSets([])
       setSelectedExercise(null)
       setActivePlan(null)
-      setActivePlan(null)
       setSaveError(null)
     } catch {
       setSaveError("Тренировката не можа да се запази. Опитай пак.")
@@ -193,7 +197,9 @@ function App() {
     <div className="min-h-screen" onClick={handleBackgroundClick}>
       <div className="mx-auto max-w-5xl px-4 py-8">
         <h1 className="mb-6 text-center text-3xl font-bold text-sky-900">
-          Дневник за тренировки
+          {view === "workout"
+            ? "Дневник"
+            : tabs.find((tab) => tab.id === view).label}
         </h1>
 
         <nav className="mb-8 flex flex-wrap justify-center gap-2">
@@ -265,6 +271,7 @@ function App() {
           <HistoryView history={history} onDelete={handleDeleteWorkout} />
         )}
         {view === "progress" && <ProgressView history={history} />}
+        {view === "profile" && <ProfileView />}
       </div>
     </div>
   )

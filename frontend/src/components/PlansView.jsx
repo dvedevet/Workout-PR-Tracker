@@ -14,7 +14,7 @@ function PlansView({
     onDeletePlan,
     onCreateExercise,
 }) {
-    const [editing, setEditing] = useState(startNew ? "new" : null) // null, "new" или id
+    const [editing, setEditing] = useState(startNew ? "new" : null)
     const [pendingDelete, setPendingDelete] = useState(null)
     const [isDeleting, setIsDeleting] = useState(false)
     const [deleteError, setDeleteError] = useState(null)

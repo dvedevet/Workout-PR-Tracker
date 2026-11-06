@@ -27,7 +27,6 @@ function SessionBoard({
         prById[set.id] = prTypes[index]
     })
 
-    // Кои упражнения се показват: от графика, после тези със серии, после избраното
     const blocks = []
     function addBlock(exercise) {
         if (!blocks.some((item) => item.id === exercise.id)) blocks.push(exercise)
@@ -35,7 +34,6 @@ function SessionBoard({
 
     const planExerciseIds = activePlan ? activePlan.exerciseIds : []
 
-    // Реда на основната група в списъка с групи (Гърди, Гръб, Крака...)
     function groupOrder(exercise) {
         const index = MUSCLE_GROUPS.indexOf(exercise.muscleGroups[0])
         return index === -1 ? MUSCLE_GROUPS.length : index
@@ -44,7 +42,7 @@ function SessionBoard({
     planExerciseIds
         .map((id) => exercises.find((item) => item.id === id))
         .filter(Boolean)
-        .sort((a, b) => groupOrder(a) - groupOrder(b)) // стабилно: вътре в групата остава редът от графика
+        .sort((a, b) => groupOrder(a) - groupOrder(b)) 
         .forEach(addBlock)
 
     sets.forEach((set) => {

@@ -1,6 +1,5 @@
 using Microsoft.IdentityModel.Tokens;
 
-// Пази публичните ключове на Supabase, с които се проверява подписът на токените.
 public class SupabaseKeys(string jwksUrl)
 {
     private static readonly HttpClient Http = new();
@@ -14,7 +13,6 @@ public class SupabaseKeys(string jwksUrl)
         {
             var age = DateTime.UtcNow - _loadedAt;
             var isStale = _set is null || age > TimeSpan.FromHours(1);
-            // Токен с непознат ключ (ротация): презареждаме, но най-много веднъж в минута
             var isUnknownKey = _set is not null && kid is not null
                 && !_set.Keys.Any(k => k.Kid == kid) && age > TimeSpan.FromMinutes(1);
 

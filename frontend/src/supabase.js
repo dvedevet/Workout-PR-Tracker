@@ -9,11 +9,8 @@ if (!url || !key) {
     )
 }
 
-// Само publishable (anon) ключът е позволен тук. service_role не отива във фронтенда.
 export const supabase = createClient(url, key)
 
-// Отделен клиент само за регистрация: не пази сесия, така че регистрацията
-// не вписва потребителя автоматично. Влиза се ръчно от екрана за вход.
 export const signUpClient = createClient(url, key, {
     auth: {
         persistSession: false,
@@ -23,7 +20,6 @@ export const signUpClient = createClient(url, key, {
     },
 })
 
-// Съобщения от Supabase Auth на български
 export function authMessage(error) {
     switch (error?.code) {
         case "invalid_credentials":

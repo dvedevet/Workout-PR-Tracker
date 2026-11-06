@@ -14,12 +14,10 @@ function ConfirmDialog({
 }) {
     const cancelRef = useRef(null)
 
-    // При отваряне фокусът е върху "Отказ", за да не се изтрие случайно с Enter
     useEffect(() => {
         cancelRef.current?.focus()
     }, [])
 
-    // Esc затваря диалога
     useEffect(() => {
         function handleKeyDown(e) {
             if (e.key === "Escape") onCancel()
@@ -28,7 +26,6 @@ function ConfirmDialog({
         return () => document.removeEventListener("keydown", handleKeyDown)
     }, [onCancel])
 
-    // Рисуваме директно в <body>, за да не го хваща ефектът за размазване на картите
     return createPortal(
         <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm"

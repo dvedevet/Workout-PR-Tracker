@@ -20,7 +20,6 @@ function ExerciseList({
     const [activeGroup, setActiveGroup] = useState("Всички")
     const [page, setPage] = useState(0)
 
-    // Клик извън блока "Упражнения" чисти търсенето
     useEffect(() => {
         function handlePointerDown(e) {
             if (sectionRef.current && !sectionRef.current.contains(e.target)) {
@@ -79,8 +78,7 @@ function ExerciseList({
             ref={sectionRef}
             className="rounded-3xl border border-white/60 bg-white/60 p-6 shadow-lg backdrop-blur-md"
         >
-            <h2 className="mb-4 text-xl font-bold text-sky-900">Упражнения</h2>
-
+            <h2 className="mb-4 text-center text-xl font-bold text-sky-900">Упражнения</h2>
             <div className="relative mb-4">
                 <Search
                     size={16}

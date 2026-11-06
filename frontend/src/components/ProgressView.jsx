@@ -78,10 +78,9 @@ function ProgressChart({ data, dataKey, name }) {
 function ProgressView({ history }) {
     const [selectedId, setSelectedId] = useState(null)
     const [metric, setMetric] = useState("oneRM")
-    const [result, setResult] = useState(null) // { exerciseId, points }
+    const [result, setResult] = useState(null)
     const [error, setError] = useState(null)
 
-    // Кои упражнения са тренирани (от историята)
     const trained = []
     history.forEach((workout) => {
         workout.exercises.forEach((exercise) => {
@@ -91,12 +90,10 @@ function ProgressView({ history }) {
         })
     })
 
-    // Ако избраното вече го няма в историята (изтрита тренировка), взимаме първото
     const activeId = trained.some((item) => item.exerciseId === selectedId)
         ? selectedId
         : (trained[0]?.exerciseId ?? null)
 
-    // Точките идват от API-то; при смяна на упражнението или историята се теглят наново
     useEffect(() => {
         if (activeId === null) return
 
@@ -111,8 +108,6 @@ function ProgressView({ history }) {
                 if (!cancelled) setError(userMessage(err))
             })
 
-        // Ако потребителят смени упражнението, преди отговорът да дойде,
-        // старият отговор се игнорира
         return () => {
             cancelled = true
         }

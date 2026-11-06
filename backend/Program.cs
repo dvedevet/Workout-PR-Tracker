@@ -7,14 +7,11 @@ using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Кои адреси на фронтенда имат право да викат API-то (от настройките)
-var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
-
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(
         "Frontend",
-        policy => policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod()
+        policy => policy.WithOrigins("http://localhost:5173").AllowAnyHeader().AllowAnyMethod()
     );
 });
 
@@ -77,6 +74,30 @@ static async Task<bool> AllExercisesVisible(AppDbContext db, Guid userId, int[] 
         exerciseIds.Contains(e.Id) && (e.UserId == null || e.UserId == userId)
     ) == exerciseIds.Length;
 
+
+static bool IsValidPhoto(string photo)
+{
+    string[] prefixes =
+    [
+        "data:image/jpeg;base64,",
+        "data:image/png;base64,",
+        "data:image/webp;base64,",
+    ];
+    var prefix = prefixes.FirstOrDefault(p => photo.StartsWith(p, StringComparison.Ordinal));
+    if (prefix is null || photo.Length > 300_000)
+        return false;
+
+    try
+    {
+        Convert.FromBase64String(photo[prefix.Length..]);
+        return true;
+    }
+    catch (FormatException)
+    {
+        return false;
+    }
+}
+
 string? ValidatePlan(PlanInput input, out string name, out int[] exerciseIds)
 {
     name = Regex.Replace((input.Name ?? "").Trim(), @"\s+", " ");
@@ -88,6 +109,65 @@ string? ValidatePlan(PlanInput input, out string name, out int[] exerciseIds)
         return "Графикът трябва да има между 1 и 50 упражнения.";
     return null;
 }
+
+api.MapGet(
+    "/profile",
+    async (ClaimsPrincipal user, AppDbContext db) =>
+    {
+        var userId = GetUserId(user);
+        var profile = await db.Profiles.AsNoTracking().FirstOrDefaultAsync(p => p.UserId == userId);
+
+        return profile is null
+            ? new ProfileDto(null, null, null)
+            : new ProfileDto(profile.WeightKg, profile.HeightCm, profile.Photo);
+    }
+);
+
+api.MapPut(
+    "/profile",
+    async (ProfileInput input, ClaimsPrincipal user, AppDbContext db) =>
+    {
+        if (input.WeightKg < 20m || input.WeightKg > 500m)
+            return Results.BadRequest("Теглото трябва да е между 20 и 500 кг.");
+        if (input.HeightCm < 80 || input.HeightCm > 260)
+            return Results.BadRequest("Височината трябва да е между 80 и 260 см.");
+
+        var userId = GetUserId(user);
+        var profile = await db.Profiles.FirstOrDefaultAsync(p => p.UserId == userId);
+        if (profile is null)
+        {
+            profile = new UserProfile { UserId = userId };
+            db.Profiles.Add(profile);
+        }
+
+        profile.WeightKg = input.WeightKg is null ? null : Math.Round(input.WeightKg.Value, 2);
+        profile.HeightCm = input.HeightCm;
+        await db.SaveChangesAsync();
+
+        return Results.Ok(new ProfileDto(profile.WeightKg, profile.HeightCm, profile.Photo));
+    }
+);
+
+api.MapPut(
+    "/profile/photo",
+    async (PhotoInput input, ClaimsPrincipal user, AppDbContext db) =>
+    {
+        if (input.Photo is not null && !IsValidPhoto(input.Photo))
+            return Results.BadRequest("Снимката трябва да е JPEG, PNG или WebP, до около 200 КБ.");
+
+        var userId = GetUserId(user);
+        var profile = await db.Profiles.FirstOrDefaultAsync(p => p.UserId == userId);
+        if (profile is null)
+        {
+            profile = new UserProfile { UserId = userId };
+            db.Profiles.Add(profile);
+        }
+
+        profile.Photo = input.Photo;
+        await db.SaveChangesAsync();
+        return Results.NoContent();
+    }
+);
 
 api.MapGet(
     "/exercises",
@@ -281,6 +361,7 @@ api.MapDelete(
         return rows == 0 ? Results.NotFound() : Results.NoContent();
     }
 );
+
 
 api.MapGet(
     "/plans",

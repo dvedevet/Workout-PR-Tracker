@@ -3,7 +3,7 @@ import { LogIn, UserPlus } from "lucide-react"
 import { supabase, signUpClient, authMessage } from "../supabase"
 
 function AuthPage() {
-    const [mode, setMode] = useState("login") // "login" или "register"
+    const [mode, setMode] = useState("login")
     const [name, setName] = useState("")
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
@@ -44,14 +44,11 @@ function AuthPage() {
             return
         }
 
-        // При включено потвърждение на имейл Supabase не връща грешка за заето
-        // имейл, а връща потребител без identities
         if (data.user && data.user.identities && data.user.identities.length === 0) {
             setError(authMessage({ code: "user_already_exists" }))
             return
         }
 
-        // Регистрацията успя: чистим полетата и пращаме потребителя към входа
         clearForm()
         setMode("login")
         setSuccess(
@@ -67,7 +64,6 @@ function AuthPage() {
             password,
         })
         if (signInError) setError(authMessage(signInError))
-        // При успех AuthGate сам ще покаже приложението
     }
 
     async function handleSubmit(e) {

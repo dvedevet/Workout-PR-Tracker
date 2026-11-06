@@ -8,7 +8,6 @@ if (!API_URL) {
 
 export class ApiError extends Error { }
 
-// Какво се показва на потребителя: съобщението на API-то или общо съобщение
 export function userMessage(err) {
     return err instanceof ApiError
         ? err.message
@@ -20,13 +19,11 @@ async function readError(response) {
         const message = await response.json()
         if (typeof message === "string") return message
     } catch {
-        // отговорът не е JSON, ползваме общо съобщение
     }
     return `Грешка от API: (${response.status}).`
 }
 
 async function request(path, options = {}) {
-    // getSession дава текущата сесия и сам подновява изтекъл токен
     const { data } = await supabase.auth.getSession()
     const token = data.session?.access_token
 
@@ -38,7 +35,6 @@ async function request(path, options = {}) {
         },
     })
 
-    // 401 = токенът липсва или не е валиден: връщаме потребителя към входа
     if (response.status === 401) {
         await supabase.auth.signOut()
         throw new ApiError("Сесията ти изтече. Влез отново.")
@@ -109,4 +105,20 @@ export async function deleteWorkout(id) {
 
 export async function getProgress(exerciseId) {
     return (await request(`/api/exercises/${exerciseId}/progress`)).json()
+}
+
+export async function getProfile() {
+    return (await request("/api/profile")).json()
+}
+
+export async function saveProfile(weightKg, heightCm) {
+    const response = await request(
+        "/api/profile",
+        jsonRequest("PUT", { weightKg, heightCm })
+    )
+    return response.json()
+}
+
+export async function savePhoto(photo) {
+    await request("/api/profile/photo", jsonRequest("PUT", { photo }))
 }

@@ -7,6 +7,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<WorkoutSet> WorkoutSets => Set<WorkoutSet>();
     public DbSet<Plan> Plans => Set<Plan>();
     public DbSet<PlanExercise> PlanExercises => Set<PlanExercise>();
+    public DbSet<UserProfile> Profiles => Set<UserProfile>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -69,6 +70,16 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 .WithMany()
                 .HasForeignKey(x => x.ExerciseId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<UserProfile>(e =>
+        {
+            e.ToTable("profiles");
+            e.HasKey(x => x.UserId);
+            e.Property(x => x.UserId).HasColumnName("user_id");
+            e.Property(x => x.WeightKg).HasColumnName("weight_kg").HasColumnType("numeric(5,2)");
+            e.Property(x => x.HeightCm).HasColumnName("height_cm");
+            e.Property(x => x.Photo).HasColumnName("photo");
         });
     }
 }

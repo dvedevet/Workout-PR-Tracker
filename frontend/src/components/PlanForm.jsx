@@ -28,7 +28,6 @@ function PlanForm({ plan, exercises, onSave, onCancel, onCreateExercise }) {
             exercise.name.toLowerCase().includes(normalizedQuery)
     )
 
-    // Предложенията, групирани по основна мускулна група
     const groupedAvailable = MUSCLE_GROUPS.map((group) => ({
         group,
         items: available.filter((exercise) => exercise.muscleGroups[0] === group),
@@ -67,7 +66,6 @@ function PlanForm({ plan, exercises, onSave, onCancel, onCreateExercise }) {
     async function handleSave() {
         if (isSaving) return
 
-        // Без реални промени няма какво да се праща
         if (!hasChanges) {
             onCancel()
             return
