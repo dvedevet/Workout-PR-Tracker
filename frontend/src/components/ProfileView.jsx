@@ -49,6 +49,13 @@ function ProfileView() {
         }
     }, [])
 
+    useEffect(() => {
+        if (!saved) return
+
+        const timer = setTimeout(() => setSaved(false), 1500)
+        return () => clearTimeout(timer)
+    }, [saved])
+
     const weightNum = weight === "" ? null : Number(weight)
     const heightNum = height === "" ? null : Number(height)
     const weightOk = weightNum === null || (weightNum >= 40 && weightNum <= 150)
