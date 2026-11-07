@@ -27,9 +27,9 @@ export function authMessage(error) {
         case "user_already_exists":
             return "Вече има акаунт с този имейл."
         case "weak_password":
-            return "Паролата е твърде слаба. Опитай по-дълга."
+            return "Паролата е твърде слаба. Нужни са поне 8 символа, главна буква, малка буква и цифра."
         case "email_not_confirmed":
-            return "Потвърди имейла си чрез връзката, която ти изпратихме."
+            return "Потвърди своя имейла чрез връзката, която ти изпратихме."
         case "email_address_invalid":
             return "Имейл адресът не е валиден."
         case "over_request_rate_limit":

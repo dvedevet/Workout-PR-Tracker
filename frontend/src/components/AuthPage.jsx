@@ -1,6 +1,7 @@
 import { useState } from "react"
-import { LogIn, UserPlus } from "lucide-react"
+import { LogIn, UserPlus, Eye, EyeOff } from "lucide-react"
 import { supabase, signUpClient, authMessage } from "../supabase"
+import ErrorMessage from "./ErrorMessage"
 
 function AuthPage() {
     const [mode, setMode] = useState("login")
@@ -10,12 +11,18 @@ function AuthPage() {
     const [isBusy, setIsBusy] = useState(false)
     const [error, setError] = useState(null)
     const [success, setSuccess] = useState(null)
+    const [showPassword, setShowPassword] = useState(false)
 
     const isRegister = mode === "register"
     const cleanName = name.trim().replace(/\s+/g, " ")
+    const passwordOk =
+        password.length >= 8 &&
+        /[a-z]/.test(password) &&
+        /[A-Z]/.test(password) &&
+        /\d/.test(password)
     const canSubmit =
         email.trim() !== "" &&
-        password.length >= 8 &&
+        (isRegister ? passwordOk : password.length >= 8) &&
         (!isRegister || cleanName !== "") &&
         !isBusy
 
@@ -36,7 +43,10 @@ function AuthPage() {
         const { data, error: signUpError } = await signUpClient.auth.signUp({
             email: email.trim(),
             password,
-            options: { data: { full_name: cleanName } },
+            options: {
+                data: { full_name: cleanName },
+                emailRedirectTo: window.location.origin,
+            },
         })
 
         if (signUpError) {
@@ -54,8 +64,7 @@ function AuthPage() {
         setSuccess(
             data.session
                 ? "Регистрацията е успешна!"
-                : "Регистрацията е успешна! Потвърдете имейла си чрез писмото, което Ви изпратихме."
-        )
+                : "Регистрацията е успешна! Потвърди своя имейл чрез писмото, което ти изпратихме.")
     }
 
     async function handleLogin() {
@@ -142,19 +151,31 @@ function AuthPage() {
                 <label className={labelClass} htmlFor="password">
                     Парола
                 </label>
-                <input
-                    id="password"
-                    type="password"
-                    autoComplete={isRegister ? "new-password" : "current-password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className={inputClass}
-                />
+                <div className="relative">
+                    <input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        autoComplete={isRegister ? "new-password" : "current-password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className={`${inputClass} pr-12`}
+                    />
+                    <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        aria-label={showPassword ? "Скрий паролата" : "Покажи паролата"}
+                        className="absolute inset-y-0 right-3 flex items-center text-sky-700 hover:text-sky-900"
+                    >
+                        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                </div>
                 {isRegister && (
-                    <p className="mt-1 text-xs text-slate-500">Поне 8 символа.</p>
+                    <p className="mt-1 text-xs text-slate-500">
+                        Поне 8 символа, една главна буква, една малка буква и цифра.
+                    </p>
                 )}
 
-                {error && <p className="mt-4 text-sm text-red-500">{error}</p>}
+                <ErrorMessage className="mt-4">{error}</ErrorMessage>
 
                 <button
                     type="submit"

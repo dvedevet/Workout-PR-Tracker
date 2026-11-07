@@ -32,7 +32,7 @@ function NewExerciseForm({ name, onCreate }) {
 
     return (
         <div className="mb-3 rounded-2xl border border-sky-200 bg-white/70 p-3">
-            <p className="mb-2 text-xs text-slate-500">
+            <p className="mb-2 text-center text-xs text-slate-500">
                 Избери мускулни групи (първата избрана е основна ★)
             </p>
 

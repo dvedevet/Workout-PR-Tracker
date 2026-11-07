@@ -3,6 +3,7 @@ import { Camera, LogOut, Mail, Ruler, Save, Scale, User } from "lucide-react"
 import { supabase } from "../supabase"
 import { getProfile, savePhoto, saveProfile, userMessage } from "../api"
 import PhotoEditor from "./PhotoEditor"
+import ErrorMessage from "./ErrorMessage"
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"]
 
@@ -11,13 +12,15 @@ const numberInputClass =
 
 function ProfileView() {
     const [user, setUser] = useState(null)
-    const [profile, setProfile] = useState(null) 
+    const [profile, setProfile] = useState(null)
     const [weight, setWeight] = useState("")
     const [height, setHeight] = useState("")
     const [loadError, setLoadError] = useState(null)
     const [isSaving, setIsSaving] = useState(false)
     const [saveError, setSaveError] = useState(null)
     const [saved, setSaved] = useState(false)
+    const [weightTouched, setWeightTouched] = useState(false)
+    const [heightTouched, setHeightTouched] = useState(false)
     const [editingFile, setEditingFile] = useState(null)
     const [photoSaving, setPhotoSaving] = useState(false)
     const [photoError, setPhotoError] = useState(null)
@@ -48,14 +51,21 @@ function ProfileView() {
 
     const weightNum = weight === "" ? null : Number(weight)
     const heightNum = height === "" ? null : Number(height)
-    const weightOk = weightNum === null || (weightNum >= 20 && weightNum <= 500)
+    const weightOk = weightNum === null || (weightNum >= 40 && weightNum <= 150)
     const heightOk =
         heightNum === null ||
-        (Number.isInteger(heightNum) && heightNum >= 80 && heightNum <= 260)
+        (Number.isInteger(heightNum) && heightNum >= 120 && heightNum <= 220)
     const changed =
         profile !== null &&
         (weightNum !== profile.weightKg || heightNum !== profile.heightCm)
     const canSave = changed && weightOk && heightOk && !isSaving
+
+    const weightError = weightOk ? null : "Теглото трябва да бъде между 40 и 150 кг."
+    const heightError = heightOk
+        ? null
+        : "Височината трябва да бъде цяло число между 120 и 220 см."
+    const showWeightError = weightTouched && weightError
+    const showHeightError = heightTouched && heightError
 
     async function handleSave(e) {
         e.preventDefault()
@@ -77,7 +87,7 @@ function ProfileView() {
 
     function handleFileChosen(e) {
         const file = e.target.files?.[0]
-        e.target.value = "" 
+        e.target.value = ""
         if (!file) return
 
         setPhotoError(null)
@@ -167,8 +177,8 @@ function ProfileView() {
                             Махни снимката
                         </button>
                     )}
-                    {photoError && !editingFile && (
-                        <p className="mt-2 text-sm text-red-500">{photoError}</p>
+                    {!editingFile && (
+                        <ErrorMessage className="mt-2 w-full">{photoError}</ErrorMessage>
                     )}
 
                     <h2 className="mt-3 max-w-full truncate text-2xl font-bold text-sky-900">
@@ -184,9 +194,7 @@ function ProfileView() {
 
                 {/* Тегло и височина: едно под друго */}
                 <form onSubmit={handleSave}>
-                    {loadError && (
-                        <p className="mb-3 text-center text-sm text-red-500">{loadError}</p>
-                    )}
+                    <ErrorMessage className="mb-3">{loadError}</ErrorMessage>
 
                     <div className="space-y-3">
                         <label className="flex items-center justify-between gap-3 rounded-xl bg-white/70 px-4 py-2.5">
@@ -206,7 +214,8 @@ function ProfileView() {
                                         setWeight(e.target.value)
                                         setSaved(false)
                                     }}
-                                    className={numberInputClass}
+                                    onBlur={() => setWeightTouched(true)}
+                                    className={`${numberInputClass} ${showWeightError ? "ring-2 ring-red-300" : ""}`}
                                 />
                                 <span className="w-6 text-sm text-slate-400">кг</span>
                             </span>
@@ -229,21 +238,21 @@ function ProfileView() {
                                         setHeight(e.target.value)
                                         setSaved(false)
                                     }}
-                                    className={numberInputClass}
+                                    onBlur={() => setHeightTouched(true)}
+                                    className={`${numberInputClass} ${showHeightError ? "ring-2 ring-red-300" : ""}`}
                                 />
                                 <span className="w-6 text-sm text-slate-400">см</span>
                             </span>
                         </label>
                     </div>
 
-                    {(!weightOk || !heightOk) && (
-                        <p className="mt-3 text-center text-xs text-red-500">
-                            Теглото е между 20 и 500 кг, височината - между 80 и 260 см (цяло число).
-                        </p>
+                    {showWeightError && (
+                        <ErrorMessage className="mt-3">{weightError}</ErrorMessage>
                     )}
-                    {saveError && (
-                        <p className="mt-3 text-center text-sm text-red-500">{saveError}</p>
+                    {showHeightError && (
+                        <ErrorMessage className="mt-3">{heightError}</ErrorMessage>
                     )}
+                    <ErrorMessage className="mt-3">{saveError}</ErrorMessage>
                     {saved && (
                         <p className="mt-3 text-center text-sm text-emerald-600">Записано.</p>
                     )}
