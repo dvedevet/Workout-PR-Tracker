@@ -3,18 +3,21 @@ import { Plus, Trash2, Trophy, X } from "lucide-react"
 
 const prLabels = { "1RM": "1RM", weight: "тежест", reps: "повт." }
 
-function formatShortDate(isoDate) {
-    return new Date(isoDate).toLocaleDateString("bg-BG", {
-        day: "numeric",
-        month: "short",
-    })
+function formatNumber(value) {
+    return value.toLocaleString("bg-BG", { maximumFractionDigits: 1 })
+}
+
+function recordText(record) {
+    if (!record) return "Още не си правил това упражнение."
+    if (record.type === "reps") return `Рекорд: ${record.maxReps} повт.`
+    return `Рекорд: ${formatNumber(record.maxWeight)} кг · 1RM ≈ ${formatNumber(record.oneRM)} кг`
 }
 
 function ExerciseBlock({
     exercise,
     sets,
     prById,
-    lastTime,
+    record,
     isSelected,
     onAddSet,
     onDeleteSet,
@@ -63,11 +66,7 @@ function ExerciseBlock({
                         </span>
                     </div>
                     <p className="mt-1 text-xs text-slate-500">
-                        {lastTime
-                            ? `Миналия път (${formatShortDate(lastTime.date)}): ${lastTime.sets
-                                .map((set) => `${set.weight} кг × ${set.reps}`)
-                                .join(", ")}`
-                            : "Още не си правил това упражнение."}
+                        {recordText(record)}
                     </p>
                 </div>
                 {onRemove && (

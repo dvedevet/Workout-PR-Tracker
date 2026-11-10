@@ -40,11 +40,9 @@ export function getPRTypes(set, previousSets) {
         types.push("weight")
     }
 
-    if (types.length === 0) {
-        const beaten = previousSets.some(
-            (prev) => prev.weight >= set.weight && prev.reps >= set.reps
-        )
-        if (!beaten) types.push("reps")
+    if (set.weight === 0) {
+        const bestReps = Math.max(...previousSets.map((prev) => prev.reps))
+        if (set.reps > bestReps) types.push("reps")
     }
 
     return types
@@ -79,23 +77,17 @@ export function getSessionPRs(history, sets) {
     })
 }
 
-export function getLastPerformance(history, exerciseId) {
-    let last = null
+export function getPersonalRecord(history, exerciseId, sessionSets = []) {
+    const sets = [...getHistorySets(history, exerciseId), ...sessionSets]
+    if (sets.length === 0) return null
 
-    history.forEach((workout) => {
-        const entry = workout.exercises.find(
-            (exercise) => exercise.exerciseId === exerciseId
+    const maxWeight = Math.max(...sets.map((set) => set.weight))
+    if (maxWeight > 0) {
+        const bestOneRM = Math.max(
+            ...sets.map((set) => epley1RM(set.weight, set.reps))
         )
-        if (!entry) return
+        return { type: "weight", maxWeight, oneRM: bestOneRM }
+    }
 
-        const isNewer =
-            !last ||
-            workout.date > last.date ||
-            (workout.date === last.date && workout.id > last.id)
-        if (isNewer) {
-            last = { id: workout.id, date: workout.date, sets: entry.sets }
-        }
-    })
-
-    return last
+    return { type: "reps", maxReps: Math.max(...sets.map((set) => set.reps)) }
 }

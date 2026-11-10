@@ -26,6 +26,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(x => x.Id).HasColumnName("id");
             e.Property(x => x.UserId).HasColumnName("user_id");
             e.Property(x => x.Date).HasColumnName("workout_date");
+            e.Property(x => x.Name).HasColumnName("name");
             e.HasMany(x => x.Sets)
                 .WithOne()
                 .HasForeignKey(x => x.WorkoutId)

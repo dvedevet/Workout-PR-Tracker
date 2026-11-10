@@ -7,19 +7,19 @@ using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var allowedOrigins = builder.Configuration
-    .GetSection("Cors:AllowedOrigins")
-    .Get<string[]>() ?? Array.Empty<string>();
+var allowedOrigins =
+    builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+    ?? Array.Empty<string>();
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("Frontend", policy =>
-    {
-        policy
-            .WithOrigins(allowedOrigins)
-            .AllowAnyHeader()
-            .AllowAnyMethod();
-    });
+    options.AddPolicy(
+        "Frontend",
+        policy =>
+        {
+            policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod();
+        }
+    );
 });
 
 var connectionString =
@@ -80,7 +80,6 @@ static async Task<bool> AllExercisesVisible(AppDbContext db, Guid userId, int[] 
     await db.Exercises.CountAsync(e =>
         exerciseIds.Contains(e.Id) && (e.UserId == null || e.UserId == userId)
     ) == exerciseIds.Length;
-
 
 static bool IsValidPhoto(string photo)
 {
@@ -176,6 +175,13 @@ api.MapPut(
     }
 );
 
+string? ValidateWorkoutName(string? raw, out string? name)
+{
+    var cleaned = Regex.Replace((raw ?? "").Trim(), @"\s+", " ");
+    name = cleaned.Length == 0 ? null : cleaned;
+    return cleaned.Length > 60 ? "Името на тренировката трябва да е до 60 символа." : null;
+}
+
 api.MapGet(
     "/exercises",
     async (ClaimsPrincipal user, AppDbContext db) =>
@@ -266,6 +272,7 @@ api.MapGet(
             {
                 w.Id,
                 w.Date,
+                w.Name,
                 Sets = w
                     .Sets.OrderBy(s => s.Id)
                     .Select(s => new
@@ -283,6 +290,7 @@ api.MapGet(
         return rows.Select(w => new WorkoutDto(
                 w.Id,
                 w.Date,
+                w.Name,
                 w.Sets.GroupBy(s => s.ExerciseId)
                     .Select(g => new WorkoutExerciseDto(
                         g.Key,
@@ -320,6 +328,10 @@ api.MapPost(
                 "Тежестта трябва да е между 0 и 9999.99, а повторенията - над 0."
             );
 
+        var nameError = ValidateWorkoutName(workout.Name, out var workoutName);
+        if (nameError is not null)
+            return Results.BadRequest(nameError);
+
         var usedIds = workout.Exercises.Select(e => e.ExerciseId).Distinct().ToArray();
         if (!await AllExercisesVisible(db, userId, usedIds))
             return Results.BadRequest("Има упражнение, което не съществува.");
@@ -328,6 +340,7 @@ api.MapPost(
         {
             UserId = userId,
             Date = workout.Date,
+            Name = workoutName,
             Sets = workout
                 .Exercises.SelectMany(exercise =>
                     exercise.Sets.Select(
@@ -357,6 +370,25 @@ api.MapPost(
     }
 );
 
+api.MapPut(
+    "/workouts/{id:int}",
+    async (int id, WorkoutNameInput input, ClaimsPrincipal user, AppDbContext db) =>
+    {
+        var userId = GetUserId(user);
+        var nameError = ValidateWorkoutName(input.Name, out var name);
+        if (nameError is not null)
+            return Results.BadRequest(nameError);
+
+        var workout = await db.Workouts.FirstOrDefaultAsync(w => w.Id == id && w.UserId == userId);
+        if (workout is null)
+            return Results.NotFound();
+
+        workout.Name = name;
+        await db.SaveChangesAsync();
+        return Results.Ok(new { name });
+    }
+);
+
 api.MapDelete(
     "/workouts/{id:int}",
     async (int id, ClaimsPrincipal user, AppDbContext db) =>
@@ -368,7 +400,6 @@ api.MapDelete(
         return rows == 0 ? Results.NotFound() : Results.NoContent();
     }
 );
-
 
 api.MapGet(
     "/plans",

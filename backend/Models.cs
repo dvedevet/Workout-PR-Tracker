@@ -11,6 +11,7 @@ public class Workout
     public Guid UserId { get; set; }
     public int Id { get; set; }
     public DateOnly Date { get; set; }
+    public string? Name { get; set; }
     public List<WorkoutSet> Sets { get; set; } = [];
 }
 

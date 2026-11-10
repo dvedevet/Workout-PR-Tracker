@@ -24,7 +24,8 @@ import {
   getWorkouts,
   saveWorkout,
   updatePlan,
-  deleteWorkout
+  renameWorkout,
+  deleteWorkout,
 } from "./api"
 
 const tabs = [
@@ -119,6 +120,15 @@ function App() {
     setPlans((current) => current.filter((plan) => plan.id !== id))
   }
 
+  async function handleRenameWorkout(id, name) {
+    const result = await renameWorkout(id, name)
+    setHistory((current) =>
+      current.map((workout) =>
+        workout.id === id ? { ...workout, name: result.name } : workout
+      )
+    )
+  }
+
   async function handleDeleteWorkout(id) {
     await deleteWorkout(id)
     setHistory((current) => current.filter((workout) => workout.id !== id))
@@ -174,6 +184,7 @@ function App() {
 
     const workout = {
       date: new Date().toLocaleDateString("sv-SE"),
+      name: activePlan ? activePlan.name : null,
       exercises: workoutExercises,
     }
 
@@ -268,7 +279,11 @@ function App() {
         )}
 
         {view === "history" && (
-          <HistoryView history={history} onDelete={handleDeleteWorkout} />
+          <HistoryView
+            history={history}
+            onRename={handleRenameWorkout}
+            onDelete={handleDeleteWorkout}
+          />
         )}
         {view === "progress" && <ProgressView history={history} />}
         {view === "profile" && <ProfileView />}

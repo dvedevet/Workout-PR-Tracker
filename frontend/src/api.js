@@ -99,6 +99,14 @@ export async function deletePlan(id) {
     await request(`/api/plans/${id}`, { method: "DELETE" })
 }
 
+export async function renameWorkout(id, name) {
+    const response = await request(
+        `/api/workouts/${id}`,
+        jsonRequest("PUT", { name })
+    )
+    return response.json()
+}
+
 export async function deleteWorkout(id) {
     await request(`/api/workouts/${id}`, { method: "DELETE" })
 }

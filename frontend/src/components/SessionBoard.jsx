@@ -1,7 +1,7 @@
 import { Check } from "lucide-react"
 import ExerciseBlock from "./ExerciseBlock"
 import PlanMenu from "./PlanMenu"
-import { getLastPerformance, getSessionPRs } from "../utils/stats"
+import { getPersonalRecord, getSessionPRs } from "../utils/stats"
 import { MUSCLE_GROUPS } from "../data/muscleGroups"
 
 function SessionBoard({
@@ -42,7 +42,7 @@ function SessionBoard({
     planExerciseIds
         .map((id) => exercises.find((item) => item.id === id))
         .filter(Boolean)
-        .sort((a, b) => groupOrder(a) - groupOrder(b)) 
+        .sort((a, b) => groupOrder(a) - groupOrder(b))
         .forEach(addBlock)
 
     sets.forEach((set) => {
@@ -96,7 +96,7 @@ function SessionBoard({
                                 exercise={exercise}
                                 sets={exerciseSets}
                                 prById={prById}
-                                lastTime={getLastPerformance(history, exercise.id)}
+                                record={getPersonalRecord(history, exercise.id, exerciseSets)}
                                 isSelected={selectedExercise?.id === exercise.id}
                                 onAddSet={onAddSet}
                                 onDeleteSet={onDeleteSet}

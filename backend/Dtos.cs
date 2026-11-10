@@ -2,13 +2,15 @@ record ExerciseDto(int Id, string Name, string[] MuscleGroups);
 
 record NewExercise(string Name, List<string> MuscleGroups);
 
-record WorkoutDto(int Id, DateOnly Date, List<WorkoutExerciseDto> Exercises);
+record WorkoutDto(int Id, DateOnly Date, string? Name, List<WorkoutExerciseDto> Exercises);
 
 record WorkoutExerciseDto(int ExerciseId, string Name, string[] MuscleGroups, List<SetDto> Sets);
 
 record SetDto(decimal Weight, int Reps);
 
-record NewWorkout(DateOnly Date, List<NewWorkoutExercise> Exercises);
+record NewWorkout(DateOnly Date, string? Name, List<NewWorkoutExercise> Exercises);
+
+record WorkoutNameInput(string? Name);
 
 record NewWorkoutExercise(int ExerciseId, List<NewSet> Sets);
 
