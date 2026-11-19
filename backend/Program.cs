@@ -69,7 +69,7 @@ api.MapGet(
         new { id = user.FindFirstValue("sub"), email = user.FindFirstValue("email") }
 );
 
-var allowedGroups = new[] { "Гърди", "Гръб", "Крака", "Рамене", "Бицепс", "Трицепс" };
+var allowedGroups = new[] { "Гърди", "Гръб", "Крака", "Рамене", "Бицепс", "Трицепс", "Корем" };
 
 static bool HasSqlState(Exception ex, string sqlState) =>
     ex.InnerException is PostgresException pg && pg.SqlState == sqlState;

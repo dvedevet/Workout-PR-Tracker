@@ -11,6 +11,7 @@ function SessionBoard({
     selectedExercise,
     sets,
     history,
+    blockOrder,
     isSaving,
     saveError,
     onLoadPlan,
@@ -20,6 +21,7 @@ function SessionBoard({
     onAddSet,
     onDeleteSet,
     onFinish,
+    onReorder,
 }) {
     const prTypes = getSessionPRs(history, sets)
     const prById = {}
@@ -56,6 +58,22 @@ function SessionBoard({
     })
     if (selectedExercise) addBlock(selectedExercise)
 
+    const orderedBlocks = [
+        ...blockOrder
+            .map((id) => blocks.find((item) => item.id === id))
+            .filter(Boolean),
+        ...blocks.filter((item) => !blockOrder.includes(item.id)),
+    ]
+
+    function moveBlock(index, direction) {
+        const target = index + direction
+        if (target < 0 || target >= orderedBlocks.length) return
+
+        const ids = orderedBlocks.map((item) => item.id)
+            ;[ids[index], ids[target]] = [ids[target], ids[index]]
+        onReorder(ids)
+    }
+
     return (
         <section className="rounded-3xl border border-white/60 bg-white/60 p-6 shadow-lg backdrop-blur-md">
             <div className="mb-4 flex items-center justify-between gap-3">
@@ -76,13 +94,13 @@ function SessionBoard({
                 </p>
             )}
 
-            {blocks.length === 0 ? (
+            {orderedBlocks.length === 0 ? (
                 <p className="text-sm text-sky-600">
                     Избери упражнение от списъка или зареди график.
                 </p>
             ) : (
                 <div className="grid gap-3">
-                    {blocks.map((exercise) => {
+                    {orderedBlocks.map((exercise, index) => {
                         const exerciseSets = sets.filter(
                             (set) => set.exerciseId === exercise.id
                         )
@@ -102,6 +120,16 @@ function SessionBoard({
                                 onDeleteSet={onDeleteSet}
                                 onRemove={
                                     canRemove ? () => onRemoveFromPlan(exercise.id) : null
+                                }
+                                onMoveUp={
+                                    orderedBlocks.length > 1 && index > 0
+                                        ? () => moveBlock(index, -1)
+                                        : null
+                                }
+                                onMoveDown={
+                                    orderedBlocks.length > 1 && index < orderedBlocks.length - 1
+                                        ? () => moveBlock(index, 1)
+                                        : null
                                 }
                             />
                         )

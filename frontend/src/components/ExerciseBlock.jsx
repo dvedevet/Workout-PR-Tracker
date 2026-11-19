@@ -1,5 +1,6 @@
 import { useState } from "react"
-import { Plus, Trash2, Trophy, X } from "lucide-react"
+import { ChevronDown, ChevronUp, Plus, Trash2, Trophy, X } from "lucide-react"
+import { isDecimalInput, parseDecimal } from "../utils/number"
 
 const prLabels = { "1RM": "1RM", weight: "тежест", reps: "повт." }
 
@@ -22,12 +23,19 @@ function ExerciseBlock({
     onAddSet,
     onDeleteSet,
     onRemove,
+    onMoveUp,
+    onMoveDown,
 }) {
     const [weight, setWeight] = useState("")
     const [reps, setReps] = useState("")
 
+    const weightValue = parseDecimal(weight)
     const isValid =
-        weight !== "" && reps !== "" && Number(weight) >= 0 && Number(reps) > 0
+        weightValue !== null &&
+        weightValue >= 0 &&
+        weightValue <= 9999.99 &&
+        reps !== "" &&
+        Number(reps) > 0
 
     function handleSubmit() {
         if (!isValid) return
@@ -37,7 +45,7 @@ function ExerciseBlock({
             exerciseId: exercise.id,
             exerciseName: exercise.name,
             muscleGroups: exercise.muscleGroups,
-            weight: Number(weight),
+            weight: weightValue,
             reps: Number(reps),
         })
         setWeight("")
@@ -69,15 +77,39 @@ function ExerciseBlock({
                         {recordText(record)}
                     </p>
                 </div>
-                {onRemove && (
-                    <button
-                        onClick={onRemove}
-                        title="Махни от тази тренировка"
-                        className="shrink-0 rounded-lg p-1 text-sky-400 transition hover:bg-sky-100 hover:text-red-400"
-                    >
-                        <X size={16} />
-                    </button>
-                )}
+                <div className="flex shrink-0 items-center">
+                    {(onMoveUp || onMoveDown) && (
+                        <>
+                            <button
+                                onClick={onMoveUp}
+                                disabled={!onMoveUp}
+                                title="Премести нагоре"
+                                aria-label="Премести нагоре"
+                                className="rounded-lg p-1.5 text-sky-400 transition hover:bg-sky-100 hover:text-sky-600 disabled:opacity-30 disabled:hover:bg-transparent"
+                            >
+                                <ChevronUp size={18} />
+                            </button>
+                            <button
+                                onClick={onMoveDown}
+                                disabled={!onMoveDown}
+                                title="Премести надолу"
+                                aria-label="Премести надолу"
+                                className="rounded-lg p-1.5 text-sky-400 transition hover:bg-sky-100 hover:text-sky-600 disabled:opacity-30 disabled:hover:bg-transparent"
+                            >
+                                <ChevronDown size={18} />
+                            </button>
+                        </>
+                    )}
+                    {onRemove && (
+                        <button
+                            onClick={onRemove}
+                            title="Махни от тази тренировка"
+                            className="rounded-lg p-1.5 text-sky-400 transition hover:bg-sky-100 hover:text-red-400"
+                        >
+                            <X size={16} />
+                        </button>
+                    )}
+                </div>
             </div>
 
             {sets.length > 0 && (
@@ -121,11 +153,14 @@ function ExerciseBlock({
 
             <div className="mt-3 grid grid-cols-2 gap-2 sm:flex">
                 <input
-                    type="number"
+                    type="text"
                     inputMode="decimal"
+                    maxLength={7}
                     placeholder="Тежест (кг)"
                     value={weight}
-                    onChange={(e) => setWeight(e.target.value)}
+                    onChange={(e) => {
+                        if (isDecimalInput(e.target.value, 2)) setWeight(e.target.value)
+                    }}
                     onKeyDown={handleKeyDown}
                     className={inputClass}
                 />

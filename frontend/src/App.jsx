@@ -47,6 +47,7 @@ function App() {
   const [selectedExercise, setSelectedExercise] = useState(null)
   const [view, setView] = useState("workout")
   const [sets, setSets] = useState([])
+  const [blockOrder, setBlockOrder] = useState([])
   const [history, setHistory] = useState([])
   const [loadError, setLoadError] = useState(null)
   const [isSaving, setIsSaving] = useState(false)
@@ -135,6 +136,7 @@ function App() {
   }
 
   function handleLoadPlan(planId) {
+    setBlockOrder([])
     const plan = plans.find((item) => item.id === planId)
     if (!plan) {
       setActivePlan(null)
@@ -196,6 +198,7 @@ function App() {
       setSets([])
       setSelectedExercise(null)
       setActivePlan(null)
+      setBlockOrder([])
       setSaveError(null)
     } catch {
       setSaveError("Тренировката не можа да се запази. Опитай пак.")
@@ -257,6 +260,8 @@ function App() {
               onLoadPlan={handleLoadPlan}
               onClearPlan={() => setActivePlan(null)}
               onRemoveFromPlan={handleRemoveFromActivePlan}
+              blockOrder={blockOrder}
+              onReorder={setBlockOrder}
               onGoToPlans={handleGoToPlans}
               onAddSet={handleAddSet}
               onDeleteSet={handleDeleteSet}

@@ -4,6 +4,7 @@ import { supabase } from "../supabase"
 import { getProfile, savePhoto, saveProfile, userMessage } from "../api"
 import PhotoEditor from "./PhotoEditor"
 import ErrorMessage from "./ErrorMessage"
+import { isDecimalInput, parseDecimal } from "../utils/number"
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"]
 
@@ -56,9 +57,11 @@ function ProfileView() {
         return () => clearTimeout(timer)
     }, [saved])
 
-    const weightNum = weight === "" ? null : Number(weight)
+    const weightNum = parseDecimal(weight)
+    const weightBad = weight.trim() !== "" && weightNum === null
     const heightNum = height === "" ? null : Number(height)
-    const weightOk = weightNum === null || (weightNum >= 40 && weightNum <= 150)
+    const weightOk =
+        !weightBad && (weightNum === null || (weightNum >= 40 && weightNum <= 150))
     const heightOk =
         heightNum === null ||
         (Number.isInteger(heightNum) && heightNum >= 120 && heightNum <= 220)
@@ -210,14 +213,13 @@ function ProfileView() {
                             </span>
                             <span className="flex items-center gap-2">
                                 <input
-                                    type="number"
+                                    type="text"
                                     inputMode="decimal"
-                                    step="0.1"
-                                    min="20"
-                                    max="500"
+                                    maxLength={5}
                                     value={weight}
                                     disabled={!profile}
                                     onChange={(e) => {
+                                        if (!isDecimalInput(e.target.value, 1)) return
                                         setWeight(e.target.value)
                                         setSaved(false)
                                     }}
