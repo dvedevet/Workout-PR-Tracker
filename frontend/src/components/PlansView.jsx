@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { Pencil, Plus, Trash2 } from "lucide-react"
+import { useT } from "../i18n"
 import PlanForm from "./PlanForm"
 import { userMessage } from "../api"
 import ConfirmDialog from "./ConfirmDialog"
@@ -14,6 +15,7 @@ function PlansView({
     onDeletePlan,
     onCreateExercise,
 }) {
+    const t = useT()
     const [editing, setEditing] = useState(startNew ? "new" : null)
     const [pendingDelete, setPendingDelete] = useState(null)
     const [isDeleting, setIsDeleting] = useState(false)
@@ -58,7 +60,7 @@ function PlansView({
 
             {plans.length === 0 && editing !== "new" && !error && (
                 <p className="rounded-3xl border border-white/60 bg-white/60 p-6 text-sky-700 shadow-lg backdrop-blur-md">
-                    Още нямаш графици. Натисни "Нов график".
+                    {t("plans.empty")}
                 </p>
             )}
 
@@ -125,16 +127,16 @@ function PlansView({
                         onClick={() => setEditing("new")}
                         className="flex items-center gap-1 rounded-full bg-sky-500 px-4 py-2 font-medium text-white shadow transition hover:bg-sky-600"
                     >
-                        <Plus size={16} /> Нов график
+                        <Plus size={16} /> {t("plans.new")}
                     </button>
                 </div>
             )}
 
             {pendingDelete && (
                 <ConfirmDialog
-                    title="Изтриване на график?"
-                    message={`Графикът ще бъде изтрит. Записаните тренировки няма да се променят.`}
-                    confirmLabel="Изтрий"
+                    title={t("plans.deleteTitle")}
+                    message={t("plans.deleteMessage")}
+                    confirmLabel={t("common.delete")}
                     isBusy={isDeleting}
                     error={deleteError}
                     onConfirm={confirmDelete}

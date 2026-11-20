@@ -3,8 +3,10 @@ import { ChevronLeft, ChevronRight, Search, X } from "lucide-react"
 import ExerciseCard from "./ExerciseCard"
 import NewExerciseForm from "./NewExerciseForm"
 import { MUSCLE_GROUPS } from "../data/muscleGroups"
+import { useT } from "../i18n"
 
-const groups = ["Всички", ...MUSCLE_GROUPS]
+const ALL = "all"
+const groups = [ALL, ...MUSCLE_GROUPS]
 const PAGE_SIZE = 3
 
 function ExerciseList({
@@ -15,9 +17,10 @@ function ExerciseList({
     onSelect,
     onCreateExercise,
 }) {
+    const t = useT()
     const sectionRef = useRef(null)
     const [query, setQuery] = useState("")
-    const [activeGroup, setActiveGroup] = useState("Всички")
+    const [activeGroup, setActiveGroup] = useState(ALL)
     const [page, setPage] = useState(0)
 
     useEffect(() => {
@@ -41,7 +44,7 @@ function ExerciseList({
         filteredExercises = exercises.filter((exercise) =>
             exercise.name.toLowerCase().includes(normalizedQuery)
         )
-    } else if (activeGroup !== "Всички") {
+    } else if (activeGroup !== ALL) {
         filteredExercises = exercises.filter((exercise) =>
             exercise.muscleGroups.includes(activeGroup)
         )
@@ -78,7 +81,7 @@ function ExerciseList({
             ref={sectionRef}
             className="rounded-3xl border border-white/60 bg-white/60 p-6 shadow-lg backdrop-blur-md"
         >
-            <h2 className="mb-4 text-center text-xl font-bold text-sky-900">Упражнения</h2>
+            <h2 className="mb-4 text-center text-xl font-bold text-sky-900">{t("exercises.title")}</h2>
             <div className="relative mb-4">
                 <Search
                     size={16}
@@ -89,7 +92,7 @@ function ExerciseList({
                     value={query}
                     maxLength={60}
                     onChange={(e) => handleQueryChange(e.target.value)}
-                    placeholder="Търси или въведи ново упражнение"
+                    placeholder={t("exercises.searchPlaceholder")}
                     className="w-full rounded-xl border border-sky-200 bg-white/80 py-2 pl-9 pr-9 text-sm outline-none focus:ring-2 focus:ring-sky-300"
                 />
                 {query && (
@@ -113,14 +116,14 @@ function ExerciseList({
                                 : "bg-white/80 text-sky-700 hover:bg-sky-100"
                                 }`}
                         >
-                            {group}
+                            {group === ALL ? t("exercises.all") : group}
                         </button>
                     ))}
                 </div>
             )}
 
             {isLoading && (
-                <p className="py-6 text-center text-sm text-sky-600">Зареждане...</p>
+                <p className="py-6 text-center text-sm text-sky-600">{t("common.loading")}</p>
             )}
 
             {error && (

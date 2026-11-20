@@ -1,1 +1,1 @@
-export const MUSCLE_GROUPS = ["Гърди", "Гръб", "Крака", "Рамене", "Бицепс", "Трицепс", "Корем"]
+export const MUSCLE_GROUPS = ["Chest", "Back", "Legs", "Shoulders", "Biceps", "Triceps", "Abs"]

@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { ZoomIn, ZoomOut } from "lucide-react"
+import { t as translate, useT } from "../i18n"
 
 const VIEW = 240 
 const OUT = 256 
 
 function PhotoEditor({ file, isSaving, error, onCancel, onSave }) {
+    const t = useT()
     const [img, setImg] = useState(null)
     const [loadError, setLoadError] = useState(null)
     const [zoom, setZoom] = useState(1)
@@ -29,7 +31,7 @@ function PhotoEditor({ file, isSaving, error, onCancel, onSave }) {
         }
         image.onerror = () => {
             if (!cancelled)
-                setLoadError("Тази снимка не може да се отвори. Опитай JPEG, PNG или WebP.")
+                setLoadError(translate("photo.loadError"))
         }
         image.src = url
 
@@ -100,7 +102,7 @@ function PhotoEditor({ file, isSaving, error, onCancel, onSave }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
             <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-xl">
                 <h3 className="mb-5 text-center text-lg font-bold text-sky-900">
-                    Нагласи снимката
+                    {t("photo.title")}
                 </h3>
 
                 {loadError ? (
@@ -141,7 +143,7 @@ function PhotoEditor({ file, isSaving, error, onCancel, onSave }) {
                                 value={zoom}
                                 onChange={handleZoom}
                                 disabled={!img}
-                                aria-label="Увеличение"
+                                aria-label={t("photo.zoom")}
                                 style={{
                                     background: `linear-gradient(to right, #0ea5e9 ${zoomPercent}%, #e0f2fe ${zoomPercent}%)`,
                                 }}
@@ -161,7 +163,7 @@ function PhotoEditor({ file, isSaving, error, onCancel, onSave }) {
                         disabled={isSaving}
                         className="rounded-xl bg-slate-100 px-5 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-200 disabled:opacity-50"
                     >
-                        Отказ
+                        {t("common.cancel")}
                     </button>
                     <button
                         type="button"
@@ -169,7 +171,7 @@ function PhotoEditor({ file, isSaving, error, onCancel, onSave }) {
                         disabled={!img || isSaving}
                         className="rounded-xl bg-sky-500 px-5 py-2 text-sm font-medium text-white shadow transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                        {isSaving ? "Записване..." : "Запази снимката"}
+                        {isSaving ? t("common.saving") : t("photo.save")}
                     </button>
                 </div>
             </div>

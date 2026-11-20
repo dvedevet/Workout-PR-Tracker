@@ -25,14 +25,14 @@ builder.Services.AddCors(options =>
 var connectionString =
     builder.Configuration.GetConnectionString("Supabase")
     ?? throw new InvalidOperationException(
-        "Липсва connection string 'Supabase'. Задай го с dotnet user-secrets."
+        "Missing connection string 'Supabase'. Set it with dotnet user-secrets."
     );
 
 builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
 
 var supabaseUrl =
     builder.Configuration["Supabase:Url"]
-    ?? throw new InvalidOperationException("Липсва Supabase:Url в appsettings.json");
+    ?? throw new InvalidOperationException("Missing Supabase:Url in appsettings.json");
 var issuer = $"{supabaseUrl}/auth/v1";
 var keys = new SupabaseKeys($"{issuer}/.well-known/jwks.json");
 
@@ -69,7 +69,7 @@ api.MapGet(
         new { id = user.FindFirstValue("sub"), email = user.FindFirstValue("email") }
 );
 
-var allowedGroups = new[] { "Гърди", "Гръб", "Крака", "Рамене", "Бицепс", "Трицепс", "Корем" };
+var allowedGroups = new[] { "Chest", "Back", "Legs", "Shoulders", "Biceps", "Triceps", "Abs" };
 
 static bool HasSqlState(Exception ex, string sqlState) =>
     ex.InnerException is PostgresException pg && pg.SqlState == sqlState;
@@ -110,9 +110,9 @@ string? ValidatePlan(PlanInput input, out string name, out int[] exerciseIds)
     exerciseIds = (input.ExerciseIds ?? new List<int>()).Distinct().ToArray();
 
     if (name.Length == 0 || name.Length > 60)
-        return "Името на графика трябва да е между 1 и 60 символа.";
+        return "Plan name must be between 1 and 60 characters.";
     if (exerciseIds.Length == 0 || exerciseIds.Length > 50)
-        return "Графикът трябва да има между 1 и 50 упражнения.";
+        return "A plan must have between 1 and 50 exercises.";
     return null;
 }
 
@@ -134,9 +134,9 @@ api.MapPut(
     async (ProfileInput input, ClaimsPrincipal user, AppDbContext db) =>
     {
         if (input.WeightKg < 20m || input.WeightKg > 500m)
-            return Results.BadRequest("Теглото трябва да е между 20 и 500 кг.");
+            return Results.BadRequest("Weight must be between 20 and 500 kg.");
         if (input.HeightCm < 80 || input.HeightCm > 260)
-            return Results.BadRequest("Височината трябва да е между 80 и 260 см.");
+            return Results.BadRequest("Height must be between 80 and 260 cm.");
 
         var userId = GetUserId(user);
         var profile = await db.Profiles.FirstOrDefaultAsync(p => p.UserId == userId);
@@ -159,7 +159,7 @@ api.MapPut(
     async (PhotoInput input, ClaimsPrincipal user, AppDbContext db) =>
     {
         if (input.Photo is not null && !IsValidPhoto(input.Photo))
-            return Results.BadRequest("Снимката трябва да е JPEG, PNG или WebP, до около 200 КБ.");
+            return Results.BadRequest("The photo must be JPEG, PNG or WebP, up to about 200 KB.");
 
         var userId = GetUserId(user);
         var profile = await db.Profiles.FirstOrDefaultAsync(p => p.UserId == userId);
@@ -179,7 +179,7 @@ string? ValidateWorkoutName(string? raw, out string? name)
 {
     var cleaned = Regex.Replace((raw ?? "").Trim(), @"\s+", " ");
     name = cleaned.Length == 0 ? null : cleaned;
-    return cleaned.Length > 60 ? "Името на тренировката трябва да е до 60 символа." : null;
+    return cleaned.Length > 60 ? "Workout name must be at most 60 characters." : null;
 }
 
 api.MapGet(
@@ -202,11 +202,11 @@ api.MapPost(
         var userId = GetUserId(user);
         var name = Regex.Replace((input.Name ?? "").Trim(), @"\s+", " ");
         if (name.Length == 0 || name.Length > 60)
-            return Results.BadRequest("Името трябва да е между 1 и 60 символа.");
+            return Results.BadRequest("Name must be between 1 and 60 characters.");
 
         var groups = (input.MuscleGroups ?? new List<string>()).Distinct().ToArray();
         if (groups.Length == 0 || groups.Any(group => !allowedGroups.Contains(group)))
-            return Results.BadRequest("Избери поне една валидна мускулна група.");
+            return Results.BadRequest("Choose at least one valid muscle group.");
 
         var nameLower = name.ToLower();
         if (
@@ -214,7 +214,7 @@ api.MapPost(
                 (e.UserId == null || e.UserId == userId) && e.Name.ToLower() == nameLower
             )
         )
-            return Results.Conflict("Упражнение с такова име вече съществува.");
+            return Results.Conflict("An exercise with this name already exists.");
 
         var exercise = new Exercise
         {
@@ -234,7 +234,7 @@ api.MapPost(
         }
         catch (DbUpdateException ex) when (HasSqlState(ex, PostgresErrorCodes.UniqueViolation))
         {
-            return Results.Conflict("Упражнение с такова име вече съществува.");
+            return Results.Conflict("An exercise with this name already exists.");
         }
     }
 );
@@ -310,14 +310,14 @@ api.MapPost(
     {
         var userId = GetUserId(user);
         if (workout.Date == default)
-            return Results.BadRequest("Липсва дата на тренировката.");
+            return Results.BadRequest("The workout date is missing.");
 
         if (
             workout.Exercises is null
             || workout.Exercises.Count == 0
             || workout.Exercises.Any(exercise => exercise.Sets is null || exercise.Sets.Count == 0)
         )
-            return Results.BadRequest("Тренировката трябва да има поне една серия.");
+            return Results.BadRequest("A workout must have at least one set.");
 
         if (
             workout.Exercises.Any(exercise =>
@@ -325,7 +325,7 @@ api.MapPost(
             )
         )
             return Results.BadRequest(
-                "Тежестта трябва да е между 0 и 9999.99, а повторенията - над 0."
+                "Weight must be between 0 and 9999.99, and reps must be greater than 0."
             );
 
         var nameError = ValidateWorkoutName(workout.Name, out var workoutName);
@@ -334,7 +334,7 @@ api.MapPost(
 
         var usedIds = workout.Exercises.Select(e => e.ExerciseId).Distinct().ToArray();
         if (!await AllExercisesVisible(db, userId, usedIds))
-            return Results.BadRequest("Има упражнение, което не съществува.");
+            return Results.BadRequest("One of the exercises does not exist.");
 
         var entity = new Workout
         {
@@ -365,7 +365,7 @@ api.MapPost(
         }
         catch (DbUpdateException ex) when (HasSqlState(ex, PostgresErrorCodes.ForeignKeyViolation))
         {
-            return Results.BadRequest("Има упражнение, което не съществува.");
+            return Results.BadRequest("One of the exercises does not exist.");
         }
     }
 );
@@ -428,7 +428,7 @@ api.MapPost(
             return Results.BadRequest(error);
 
         if (!await AllExercisesVisible(db, userId, exerciseIds))
-            return Results.BadRequest("Има упражнение, което не съществува.");
+            return Results.BadRequest("One of the exercises does not exist.");
 
         var plan = new Plan
         {
@@ -453,11 +453,11 @@ api.MapPost(
         }
         catch (DbUpdateException ex) when (HasSqlState(ex, PostgresErrorCodes.UniqueViolation))
         {
-            return Results.Conflict("График с такова име вече съществува.");
+            return Results.Conflict("A plan with this name already exists.");
         }
         catch (DbUpdateException ex) when (HasSqlState(ex, PostgresErrorCodes.ForeignKeyViolation))
         {
-            return Results.BadRequest("Има упражнение, което не съществува.");
+            return Results.BadRequest("One of the exercises does not exist.");
         }
     }
 );
@@ -472,7 +472,7 @@ api.MapPut(
             return Results.BadRequest(error);
 
         if (!await AllExercisesVisible(db, userId, exerciseIds))
-            return Results.BadRequest("Има упражнение, което не съществува.");
+            return Results.BadRequest("One of the exercises does not exist.");
 
         await using var transaction = await db.Database.BeginTransactionAsync();
 
@@ -504,11 +504,11 @@ api.MapPut(
         }
         catch (DbUpdateException ex) when (HasSqlState(ex, PostgresErrorCodes.UniqueViolation))
         {
-            return Results.Conflict("График с такова име вече съществува.");
+            return Results.Conflict("A plan with this name already exists.");
         }
         catch (DbUpdateException ex) when (HasSqlState(ex, PostgresErrorCodes.ForeignKeyViolation))
         {
-            return Results.BadRequest("Има упражнение, което не съществува.");
+            return Results.BadRequest("One of the exercises does not exist.");
         }
     }
 );

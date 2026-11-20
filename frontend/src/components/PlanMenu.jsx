@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react"
 import { ChevronDown, ClipboardList, Plus } from "lucide-react"
+import { useT } from "../i18n"
 
 function PlanMenu({ plans, activePlan, onLoad, onClear, onGoToPlans }) {
+    const t = useT()
     const [isOpen, setIsOpen] = useState(false)
     const menuRef = useRef(null)
 
@@ -35,7 +37,7 @@ function PlanMenu({ plans, activePlan, onLoad, onClear, onGoToPlans }) {
             >
                 <ClipboardList size={16} />
                 <span className="max-w-[9rem] truncate">
-                    {activePlan ? activePlan.name : "График"}
+                    {activePlan ? activePlan.name : t("plans.menuLabel")}
                 </span>
                 <ChevronDown
                     size={16}
@@ -47,7 +49,7 @@ function PlanMenu({ plans, activePlan, onLoad, onClear, onGoToPlans }) {
                 <div className="absolute right-0 z-20 mt-2 w-64 rounded-2xl border border-white/60 bg-white/95 p-2 shadow-xl">
                     {plans.length === 0 ? (
                         <div className="p-2 text-sm text-slate-600">
-                            <p>В момента няма графици.</p>
+                            <p>{t("plans.menuEmpty")}</p>
                             <button
                                 onClick={() => {
                                     setIsOpen(false)
@@ -55,7 +57,7 @@ function PlanMenu({ plans, activePlan, onLoad, onClear, onGoToPlans }) {
                                 }}
                                 className="mt-3 flex w-full items-center justify-center gap-1 rounded-xl bg-sky-500 px-3 py-2 text-sm font-medium text-white transition hover:bg-sky-600"
                             >
-                                <Plus size={16} /> Добави график
+                                <Plus size={16} /> {t("plans.menuAdd")}
                             </button>
                         </div>
                     ) : (
@@ -72,7 +74,7 @@ function PlanMenu({ plans, activePlan, onLoad, onClear, onGoToPlans }) {
                                         >
                                             <span className="truncate">{plan.name}</span>
                                             <span className="shrink-0 text-xs text-slate-400">
-                                                {plan.exerciseIds.length} упр.
+                                                {t("plans.exerciseCount", { count: plan.exerciseIds.length })}
                                             </span>
                                         </button>
                                     </li>
@@ -86,7 +88,7 @@ function PlanMenu({ plans, activePlan, onLoad, onClear, onGoToPlans }) {
                                     }}
                                     className="mt-1 w-full rounded-xl border-t border-sky-100 px-3 py-2 text-left text-sm text-slate-500 transition hover:bg-sky-50"
                                 >
-                                    Без график
+                                    {t("plans.menuNone")}
                                 </button>
                             )}
                         </>

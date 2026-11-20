@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react"
 import { supabase } from "../supabase"
 import AuthPage from "./AuthPage"
+import { useT } from "../i18n"
 
 function AuthGate({ children }) {
+    const t = useT()
     const [session, setSession] = useState(undefined)
 
     useEffect(() => {
@@ -17,7 +19,7 @@ function AuthGate({ children }) {
 
     if (session === undefined) {
         return (
-            <p className="py-20 text-center text-sm text-sky-600">Зареждане...</p>
+            <p className="py-20 text-center text-sm text-sky-600">{t("common.loading")}</p>
         )
     }
 

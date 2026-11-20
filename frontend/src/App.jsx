@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { t as translate, useT } from "./i18n"
 
 import {
   ClipboardList,
@@ -29,14 +30,15 @@ import {
 } from "./api"
 
 const tabs = [
-  { id: "workout", label: "Тренировка", icon: Dumbbell },
-  { id: "plans", label: "График", icon: ClipboardList },
-  { id: "history", label: "История", icon: HistoryIcon },
-  { id: "progress", label: "Прогрес", icon: TrendingUp },
-  { id: "profile", label: "Профил", icon: User },
+  { id: "workout", labelKey: "tabs.workout", icon: Dumbbell },
+  { id: "plans", labelKey: "tabs.plans", icon: ClipboardList },
+  { id: "history", labelKey: "tabs.history", icon: HistoryIcon },
+  { id: "progress", labelKey: "tabs.progress", icon: TrendingUp },
+  { id: "profile", labelKey: "tabs.profile", icon: User },
 ]
 
 function App() {
+  const t = useT()
   const [exercises, setExercises] = useState([])
   const [exercisesLoading, setExercisesLoading] = useState(true)
   const [exercisesError, setExercisesError] = useState(null)
@@ -57,7 +59,7 @@ function App() {
     getExercises()
       .then((data) => setExercises(data))
       .catch(() =>
-        setExercisesError("Упражненията не могат да се заредят.")
+        setExercisesError(translate("errors.loadExercises"))
       )
       .finally(() => setExercisesLoading(false))
   }, [])
@@ -66,7 +68,7 @@ function App() {
     getPlans()
       .then((data) => setPlans(data))
       .catch(() =>
-        setPlansError("Графиците не могат да се заредят.")
+        setPlansError(translate("errors.loadPlans"))
       )
   }, [])
 
@@ -74,7 +76,7 @@ function App() {
     getWorkouts()
       .then((data) => setHistory(data))
       .catch(() =>
-        setLoadError("Историята не може да се зареди.")
+        setLoadError(translate("errors.loadHistory"))
       )
   }, [])
 
@@ -201,7 +203,7 @@ function App() {
       setBlockOrder([])
       setSaveError(null)
     } catch {
-      setSaveError("Тренировката не можа да се запази. Опитай пак.")
+      setSaveError(t("errors.saveWorkout"))
     } finally {
       setIsSaving(false)
     }
@@ -212,8 +214,8 @@ function App() {
       <div className="mx-auto max-w-5xl px-4 py-8">
         <h1 className="mb-6 text-center text-3xl font-bold text-sky-900">
           {view === "workout"
-            ? "Дневник"
-            : tabs.find((tab) => tab.id === view).label}
+            ? t("header.workout")
+            : t(tabs.find((tab) => tab.id === view).labelKey)}
         </h1>
 
         <nav className="mb-8 flex flex-wrap justify-center gap-2">
@@ -228,7 +230,7 @@ function App() {
                   : "bg-white/70 text-sky-700 hover:bg-sky-100"
                   }`}
               >
-                <Icon size={18} /> {tab.label}
+                <Icon size={18} /> {t(tab.labelKey)}
               </button>
             )
           })}

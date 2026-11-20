@@ -1,10 +1,12 @@
 import { useState } from "react"
 import { ArrowDown, ArrowUp, X } from "lucide-react"
+import { useT } from "../i18n"
 import NewExerciseForm from "./NewExerciseForm"
 import { userMessage } from "../api"
 import { MUSCLE_GROUPS } from "../data/muscleGroups"
 
 function PlanForm({ plan, exercises, onSave, onCancel, onCreateExercise }) {
+    const t = useT()
     const [name, setName] = useState(plan?.name ?? "")
     const [ids, setIds] = useState(plan ? [...plan.exerciseIds] : [])
     const [query, setQuery] = useState("")
@@ -87,7 +89,7 @@ function PlanForm({ plan, exercises, onSave, onCancel, onCreateExercise }) {
     return (
         <div className="rounded-3xl border border-sky-200 bg-white/70 p-6 shadow-lg backdrop-blur-md">
             <h3 className="mb-3 text-lg font-bold text-sky-900">
-                {plan ? "Редакция на график" : "Нов график"}
+                {plan ? t("planForm.edit") : t("planForm.new")}
             </h3>
 
             <input
@@ -95,15 +97,15 @@ function PlanForm({ plan, exercises, onSave, onCancel, onCreateExercise }) {
                 value={name}
                 maxLength={60}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Име на графика (напр. Гърди и гръб)"
+                placeholder={t("planForm.namePlaceholder")}
                 className="mb-4 w-full rounded-xl border border-sky-200 bg-white/80 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-300"
             />
 
             <p className="mb-2 text-sm font-medium text-sky-800">
-                Упражнения в графика ({ids.length})
+                {t("planForm.exercisesIn", { count: ids.length })}
             </p>
             {ids.length === 0 ? (
-                <p className="mb-4 text-sm text-slate-500">Още не си добавил упражнения.</p>
+                <p className="mb-4 text-sm text-slate-500">{t("planForm.noExercises")}</p>
             ) : (
                 <ul className="mb-4 grid gap-2">
                     {ids.map((id, index) => {
@@ -146,19 +148,19 @@ function PlanForm({ plan, exercises, onSave, onCancel, onCreateExercise }) {
                 </ul>
             )}
 
-            <p className="mb-2 text-sm font-medium text-sky-800">Добави упражнение</p>
+            <p className="mb-2 text-sm font-medium text-sky-800">{t("planForm.addExercise")}</p>
             <input
                 type="text"
                 value={query}
                 maxLength={60}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Търси или въведи ново упражнение"
+                placeholder={t("exercises.searchPlaceholder")}
                 className="mb-2 w-full rounded-xl border border-sky-200 bg-white/80 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-300"
             />
 
             {alreadyAdded && (
                 <p className="mb-2 text-xs text-slate-500">
-                    „{exactMatch.name}“ вече е в графика.
+                    {t("planForm.alreadyIn", { name: exactMatch.name })}
                 </p>
             )}
 
@@ -203,13 +205,13 @@ function PlanForm({ plan, exercises, onSave, onCancel, onCreateExercise }) {
                     disabled={!canSave}
                     className="flex-1 rounded-xl bg-sky-500 px-4 py-2 text-sm font-medium text-white shadow transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                    {isSaving ? "Запазване..." : "Запази графика"}
+                    {isSaving ? t("common.saving") : t("planForm.save")}
                 </button>
                 <button
                     onClick={onCancel}
                     className="rounded-xl bg-white/80 px-4 py-2 text-sm font-medium text-sky-700 transition hover:bg-sky-100"
                 >
-                    Откажи
+                    {t("common.cancel")}
                 </button>
             </div>
         </div>

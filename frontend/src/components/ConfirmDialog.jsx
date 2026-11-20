@@ -1,17 +1,19 @@
 import { useEffect, useRef } from "react"
 import { createPortal } from "react-dom"
 import { AlertTriangle } from "lucide-react"
+import { useT } from "../i18n"
 
 function ConfirmDialog({
     title,
     message,
-    confirmLabel = "Потвърди",
-    cancelLabel = "Отказ",
+    confirmLabel,
+    cancelLabel,
     isBusy = false,
     error = null,
     onConfirm,
     onCancel,
 }) {
+    const t = useT()
     const cancelRef = useRef(null)
 
     useEffect(() => {
@@ -59,14 +61,14 @@ function ConfirmDialog({
                         disabled={isBusy}
                         className="rounded-xl bg-sky-50 px-4 py-2 text-sm font-medium text-sky-700 transition hover:bg-sky-100 disabled:opacity-50"
                     >
-                        {cancelLabel}
+                        {cancelLabel ?? t("common.cancel")}
                     </button>
                     <button
                         onClick={onConfirm}
                         disabled={isBusy}
                         className="rounded-xl bg-red-500 px-4 py-2 text-sm font-medium text-white shadow transition hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                        {isBusy ? "Изтриване..." : confirmLabel}
+                        {isBusy ? t("common.deleting") : (confirmLabel ?? t("common.confirm"))}
                     </button>
                 </div>
             </div>

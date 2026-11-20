@@ -3,6 +3,7 @@ import ExerciseBlock from "./ExerciseBlock"
 import PlanMenu from "./PlanMenu"
 import { getPersonalRecord, getSessionPRs } from "../utils/stats"
 import { MUSCLE_GROUPS } from "../data/muscleGroups"
+import { useT } from "../i18n"
 
 function SessionBoard({
     exercises,
@@ -23,6 +24,7 @@ function SessionBoard({
     onFinish,
     onReorder,
 }) {
+    const t = useT()
     const prTypes = getSessionPRs(history, sets)
     const prById = {}
     sets.forEach((set, index) => {
@@ -77,7 +79,7 @@ function SessionBoard({
     return (
         <section className="rounded-3xl border border-white/60 bg-white/60 p-6 shadow-lg backdrop-blur-md">
             <div className="mb-4 flex items-center justify-between gap-3">
-                <h2 className="text-xl font-bold text-sky-900">Текуща тренировка</h2>
+                <h2 className="text-xl font-bold text-sky-900">{t("session.title")}</h2>
                 <PlanMenu
                     plans={plans}
                     activePlan={activePlan}
@@ -89,14 +91,13 @@ function SessionBoard({
 
             {activePlan && (
                 <p className="mb-3 text-xs text-slate-500">
-                    График „{activePlan.name}“. Промените тук важат само за тази
-                    тренировка.
+                    {t("session.planNote", { name: activePlan.name })}
                 </p>
             )}
 
             {orderedBlocks.length === 0 ? (
                 <p className="text-sm text-sky-600">
-                    Избери упражнение от списъка или зареди график.
+                    {t("session.empty")}
                 </p>
             ) : (
                 <div className="grid gap-3">
@@ -145,11 +146,11 @@ function SessionBoard({
                         className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-sky-600 px-4 py-2.5 font-medium text-white shadow transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                         <Check size={18} />
-                        {isSaving ? "Запазване..." : "Завърши тренировката"}
+                        {isSaving ? t("common.saving") : t("session.finish")}
                     </button>
                     {sets.length === 0 && (
                         <p className="mt-2 text-center text-xs text-slate-500">
-                            Добави поне една серия, за да завършиш тренировката.
+                            {t("session.needSet")}
                         </p>
                     )}
                     {saveError && (

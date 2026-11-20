@@ -1,9 +1,11 @@
 import { useState } from "react"
 import { LogIn, UserPlus, Eye, EyeOff } from "lucide-react"
+import { useT } from "../i18n"
 import { supabase, signUpClient, authMessage } from "../supabase"
 import ErrorMessage from "./ErrorMessage"
 
 function AuthPage() {
+    const t = useT()
     const [mode, setMode] = useState("login")
     const [name, setName] = useState("")
     const [email, setEmail] = useState("")
@@ -63,8 +65,8 @@ function AuthPage() {
         setMode("login")
         setSuccess(
             data.session
-                ? "Регистрацията е успешна!"
-                : "Регистрацията е успешна! Потвърди своя имейл чрез писмото, което ти изпратихме.")
+                ? t("auth.signedUp")
+                : t("auth.signedUpConfirm"))
     }
 
     async function handleLogin() {
@@ -102,7 +104,7 @@ function AuthPage() {
     return (
         <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-4 py-8">
             <h1 className="mb-8 text-center text-4xl font-bold text-sky-900">
-                Дневник за тренировки
+                {t("auth.title")}
             </h1>
 
             <form
@@ -110,7 +112,7 @@ function AuthPage() {
                 className="rounded-3xl border border-white/60 bg-white/60 p-8 shadow-lg backdrop-blur-md"
             >
                 <h2 className="mb-6 text-center text-2xl font-bold text-sky-900">
-                    {isRegister ? "Регистрация" : "Вход"}
+                    {isRegister ? t("auth.signUp") : t("auth.signIn")}
                 </h2>
 
                 {success && (
@@ -122,7 +124,7 @@ function AuthPage() {
                 {isRegister && (
                     <>
                         <label className={labelClass} htmlFor="name">
-                            Име
+                            {t("auth.name")}
                         </label>
                         <input
                             id="name"
@@ -137,7 +139,7 @@ function AuthPage() {
                 )}
 
                 <label className={labelClass} htmlFor="email">
-                    Имейл
+                    {t("auth.email")}
                 </label>
                 <input
                     id="email"
@@ -149,7 +151,7 @@ function AuthPage() {
                 />
 
                 <label className={labelClass} htmlFor="password">
-                    Парола
+                    {t("auth.password")}
                 </label>
                 <div className="relative">
                     <input
@@ -163,7 +165,7 @@ function AuthPage() {
                     <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        aria-label={showPassword ? "Скрий паролата" : "Покажи паролата"}
+                        aria-label={showPassword ? t("auth.hidePassword") : t("auth.showPassword")}
                         className="absolute inset-y-0 right-3 flex items-center text-sky-700 hover:text-sky-900"
                     >
                         {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
@@ -171,7 +173,7 @@ function AuthPage() {
                 </div>
                 {isRegister && (
                     <p className="mt-1 text-xs text-slate-500">
-                        Поне 8 символа, една главна буква, една малка буква и цифра.
+                        {t("auth.passwordHint")}
                     </p>
                 )}
 
@@ -183,7 +185,7 @@ function AuthPage() {
                     className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-sky-500 px-4 py-3 text-base font-medium text-white shadow transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                     {isRegister ? <UserPlus size={20} /> : <LogIn size={20} />}
-                    {isBusy ? "Моля, изчакай..." : isRegister ? "Регистрирай се" : "Влез"}
+                    {isBusy ? t("auth.pleaseWait") : isRegister ? t("auth.signUp") : t("auth.signIn")}
                 </button>
             </form>
 
@@ -192,8 +194,8 @@ function AuthPage() {
                 className="mt-5 text-center text-sm text-sky-700 underline-offset-2 hover:underline"
             >
                 {isRegister
-                    ? "Вече имаш акаунт? Влез"
-                    : "Нямаш акаунт? Регистрирай се"}
+                    ? t("auth.haveAccount")
+                    : t("auth.noAccount")}
             </button>
         </div>
     )

@@ -5,6 +5,7 @@ import { getProfile, savePhoto, saveProfile, userMessage } from "../api"
 import PhotoEditor from "./PhotoEditor"
 import ErrorMessage from "./ErrorMessage"
 import { isDecimalInput, parseDecimal } from "../utils/number"
+import { useT } from "../i18n"
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"]
 
@@ -12,6 +13,7 @@ const numberInputClass =
     "w-24 rounded-lg border border-sky-200 bg-white px-3 py-1.5 text-right text-sm outline-none focus:ring-2 focus:ring-sky-300 disabled:opacity-50 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
 
 function ProfileView() {
+    const t = useT()
     const [user, setUser] = useState(null)
     const [profile, setProfile] = useState(null)
     const [weight, setWeight] = useState("")
@@ -70,10 +72,10 @@ function ProfileView() {
         (weightNum !== profile.weightKg || heightNum !== profile.heightCm)
     const canSave = changed && weightOk && heightOk && !isSaving
 
-    const weightError = weightOk ? null : "Теглото трябва да бъде между 40 и 150 кг."
+    const weightError = weightOk ? null : t("profile.weightError")
     const heightError = heightOk
         ? null
-        : "Височината трябва да бъде цяло число между 120 и 220 см."
+        : t("profile.heightError")
     const showWeightError = weightTouched && weightError
     const showHeightError = heightTouched && heightError
 
@@ -102,7 +104,7 @@ function ProfileView() {
 
         setPhotoError(null)
         if (!ALLOWED_TYPES.includes(file.type)) {
-            setPhotoError("Избери снимка във формат JPEG, PNG или WebP.")
+            setPhotoError(t("profile.photoType"))
             return
         }
         setEditingFile(file)
@@ -136,7 +138,7 @@ function ProfileView() {
     }
 
     if (!user) {
-        return <p className="py-10 text-center text-sm text-sky-600">Зареждане...</p>
+        return <p className="py-10 text-center text-sm text-sky-600">{t("common.loading")}</p>
     }
 
     const name = user.user_metadata?.full_name || user.email
@@ -145,13 +147,12 @@ function ProfileView() {
     return (
         <div className="mx-auto max-w-sm">
             <div className="rounded-3xl border border-white/60 bg-white/60 p-6 shadow-lg backdrop-blur-md">
-                {/* Снимка с малък бутон за камера в ъгъла */}
                 <div className="flex flex-col items-center text-center">
                     <div className="relative">
                         {photo ? (
                             <img
                                 src={photo}
-                                alt="Профилна снимка"
+                                alt={t("profile.photoAlt")}
                                 className="h-28 w-28 rounded-full object-cover shadow ring-4 ring-white"
                             />
                         ) : (
@@ -163,7 +164,7 @@ function ProfileView() {
                             type="button"
                             onClick={() => fileInput.current.click()}
                             disabled={!profile || photoSaving}
-                            aria-label={photo ? "Смени снимката" : "Качи снимка"}
+                            aria-label={photo ? t("profile.changePhoto") : t("profile.uploadPhoto")}
                             className="absolute bottom-0 right-0 flex h-9 w-9 items-center justify-center rounded-full bg-sky-500 text-white shadow-md ring-2 ring-white transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             <Camera size={17} />
@@ -184,7 +185,7 @@ function ProfileView() {
                             disabled={photoSaving}
                             className="mt-2 text-xs text-slate-400 transition hover:text-red-500 disabled:opacity-50"
                         >
-                            Махни снимката
+                            {t("profile.removePhoto")}
                         </button>
                     )}
                     {!editingFile && (
@@ -202,14 +203,13 @@ function ProfileView() {
 
                 <div className="my-6 border-t border-sky-100" />
 
-                {/* Тегло и височина: едно под друго */}
                 <form onSubmit={handleSave}>
                     <ErrorMessage className="mb-3">{loadError}</ErrorMessage>
 
                     <div className="space-y-3">
                         <label className="flex items-center justify-between gap-3 rounded-xl bg-white/70 px-4 py-2.5">
                             <span className="flex items-center gap-2 text-sm font-medium text-sky-800">
-                                <Scale size={18} className="text-sky-500" /> Тегло
+                                <Scale size={18} className="text-sky-500" /> {t("profile.weight")}
                             </span>
                             <span className="flex items-center gap-2">
                                 <input
@@ -226,13 +226,13 @@ function ProfileView() {
                                     onBlur={() => setWeightTouched(true)}
                                     className={`${numberInputClass} ${showWeightError ? "ring-2 ring-red-300" : ""}`}
                                 />
-                                <span className="w-6 text-sm text-slate-400">кг</span>
+                                <span className="w-6 text-sm text-slate-400">{t("common.kg")}</span>
                             </span>
                         </label>
 
                         <label className="flex items-center justify-between gap-3 rounded-xl bg-white/70 px-4 py-2.5">
                             <span className="flex items-center gap-2 text-sm font-medium text-sky-800">
-                                <Ruler size={18} className="text-sky-500" /> Височина
+                                <Ruler size={18} className="text-sky-500" /> {t("profile.height")}
                             </span>
                             <span className="flex items-center gap-2">
                                 <input
@@ -250,7 +250,7 @@ function ProfileView() {
                                     onBlur={() => setHeightTouched(true)}
                                     className={`${numberInputClass} ${showHeightError ? "ring-2 ring-red-300" : ""}`}
                                 />
-                                <span className="w-6 text-sm text-slate-400">см</span>
+                                <span className="w-6 text-sm text-slate-400">{t("common.cm")}</span>
                             </span>
                         </label>
                     </div>
@@ -263,7 +263,7 @@ function ProfileView() {
                     )}
                     <ErrorMessage className="mt-3">{saveError}</ErrorMessage>
                     {saved && (
-                        <p className="mt-3 text-center text-sm text-emerald-600">Записано.</p>
+                        <p className="mt-3 text-center text-sm text-emerald-600">{t("profile.saved")}</p>
                     )}
 
                     <button
@@ -271,7 +271,7 @@ function ProfileView() {
                         disabled={!canSave}
                         className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-sky-500 px-4 py-2.5 text-sm font-medium text-white shadow transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                        <Save size={16} /> {isSaving ? "Записване..." : "Запази"}
+                        <Save size={16} /> {isSaving ? t("common.saving") : t("common.save")}
                     </button>
                 </form>
             </div>
@@ -280,7 +280,7 @@ function ProfileView() {
                 onClick={() => supabase.auth.signOut()}
                 className="mx-auto mt-6 flex items-center justify-center gap-2 rounded-full bg-white/70 px-5 py-2 text-sm font-medium text-slate-500 shadow transition hover:bg-red-50 hover:text-red-500"
             >
-                <LogOut size={16} /> Изход
+                <LogOut size={16} /> {t("profile.signOut")}
             </button>
 
             {editingFile && (

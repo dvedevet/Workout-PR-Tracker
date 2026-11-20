@@ -3,14 +3,7 @@ import { CalendarDays, Check, ChevronDown, Pencil, Trash2, X } from "lucide-reac
 import ConfirmDialog from "./ConfirmDialog"
 import ErrorMessage from "./ErrorMessage"
 import { userMessage } from "../api"
-
-function formatDate(isoDate) {
-    return new Date(isoDate).toLocaleDateString("bg-BG", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-    })
-}
+import { formatDate, useT } from "../i18n"
 
 function getAutoName(workout) {
     const groups = workout.exercises.map((exercise) => exercise.muscleGroups[0])
@@ -22,6 +15,7 @@ function getWorkoutName(workout) {
 }
 
 function HistoryView({ history, onRename, onDelete }) {
+    const t = useT()
     const [openId, setOpenId] = useState(null)
     const [pending, setPending] = useState(null)
     const [isDeleting, setIsDeleting] = useState(false)
@@ -85,7 +79,7 @@ function HistoryView({ history, onRename, onDelete }) {
     if (history.length === 0) {
         return (
             <section className="rounded-3xl border border-white/60 bg-white/60 p-6 text-sky-700 shadow-lg backdrop-blur-md">
-                Още няма записани тренировки.
+                {t("history.empty")}
             </section>
         )
     }
@@ -120,7 +114,7 @@ function HistoryView({ history, onRename, onDelete }) {
                                     <button
                                         type="submit"
                                         disabled={isRenaming}
-                                        title="Запази името"
+                                        title={t("history.saveName")}
                                         className="shrink-0 rounded-lg bg-sky-500 p-2 text-white shadow transition hover:bg-sky-600 disabled:opacity-50"
                                     >
                                         <Check size={18} />
@@ -129,7 +123,7 @@ function HistoryView({ history, onRename, onDelete }) {
                                         type="button"
                                         onClick={cancelRename}
                                         disabled={isRenaming}
-                                        title="Откажи"
+                                        title={t("common.cancel")}
                                         className="shrink-0 rounded-lg p-2 text-sky-500 transition hover:bg-sky-100 disabled:opacity-50"
                                     >
                                         <X size={18} />
@@ -148,7 +142,7 @@ function HistoryView({ history, onRename, onDelete }) {
                                             {getWorkoutName(workout)}
                                         </p>
                                         <p className="mt-0.5 flex items-center gap-1.5 text-sm text-slate-500">
-                                            <CalendarDays size={14} /> {formatDate(workout.date)}
+                                            <CalendarDays size={14} /> {formatDate(workout.date, { day: "numeric", month: "long", year: "numeric" })}
                                         </p>
                                     </div>
                                     <ChevronDown
@@ -159,14 +153,14 @@ function HistoryView({ history, onRename, onDelete }) {
                                 </button>
                                 <button
                                     onClick={() => startRename(workout)}
-                                    title="Промени името"
+                                    title={t("history.editName")}
                                     className="shrink-0 rounded-lg p-1.5 text-sky-400 transition hover:bg-sky-100 hover:text-sky-600"
                                 >
                                     <Pencil size={18} />
                                 </button>
                                 <button
                                     onClick={() => askDelete(workout)}
-                                    title="Изтрий тренировката"
+                                    title={t("history.delete")}
                                     className="mr-4 shrink-0 rounded-lg p-1.5 text-sky-400 transition hover:bg-sky-100 hover:text-red-400"
                                 >
                                     <Trash2 size={18} />
@@ -193,7 +187,7 @@ function HistoryView({ history, onRename, onDelete }) {
                                                     className="rounded-lg bg-sky-50 px-2 py-0.5 font-medium text-sky-800"
                                                 >
                                                     <span className="text-slate-500">{index + 1}.</span>{" "}
-                                                    {set.weight} кг × {set.reps}
+                                                    {t("history.setLine", { weight: set.weight, reps: set.reps })}
                                                 </span>
                                             ))}
                                         </div>
@@ -207,9 +201,9 @@ function HistoryView({ history, onRename, onDelete }) {
 
             {pending && (
                 <ConfirmDialog
-                    title="Изтриване на тренировка?"
-                    message={`Тренировката ще бъде изтрита завинаги. Тя ще изчезне от графиката в "Прогрес", а резултатите ще се преизчислят без нея.`}
-                    confirmLabel="Изтрий"
+                    title={t("history.deleteTitle")}
+                    message={t("history.deleteMessage")}
+                    confirmLabel={t("common.delete")}
                     isBusy={isDeleting}
                     error={error}
                     onConfirm={confirmDelete}

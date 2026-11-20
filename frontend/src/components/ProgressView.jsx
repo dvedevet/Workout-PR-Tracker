@@ -10,20 +10,19 @@ import {
     Tooltip,
 } from "recharts"
 import { getProgress, userMessage } from "../api"
+import { formatDate, useT } from "../i18n"
 
 const metrics = [
-    { id: "oneRM", label: "Прогнозен 1RM" },
-    { id: "maxWeight", label: "Макс. тежест" },
+    { id: "oneRM", labelKey: "progress.metricOneRM" },
+    { id: "maxWeight", labelKey: "progress.metricMaxWeight" },
 ]
 
 function shortDate(isoDate) {
-    return new Date(isoDate).toLocaleDateString("bg-BG", {
-        day: "numeric",
-        month: "short",
-    })
+    return formatDate(isoDate, { day: "numeric", month: "short" })
 }
 
 function ChartTooltip({ active, payload, metric }) {
+    const t = useT()
     if (!active || !payload || payload.length === 0) return null
     const point = payload[0].payload
 
@@ -31,15 +30,15 @@ function ChartTooltip({ active, payload, metric }) {
         <div className="rounded-xl border border-sky-100 bg-white/95 px-3 py-2 text-sm shadow-lg">
             <p className="font-semibold text-sky-900">{point.label}</p>
             {metric === "oneRM" && (
-                <p className="text-sky-700">Прогнозен 1RM: {point.oneRM} кг.</p>
+                <p className="text-sky-700">{t("progress.tooltipOneRM", { value: point.oneRM })}</p>
             )}
             {metric === "maxWeight" && (
                 <p className="text-sky-700">
-                    Тежест: {point.maxWeight} кг. | Повторения: {point.maxWeightReps}
+                    {t("progress.tooltipWeight", { weight: point.maxWeight, reps: point.maxWeightReps })}
                 </p>
             )}
             {metric === "maxReps" && (
-                <p className="text-sky-700">Повторения: {point.maxReps}</p>
+                <p className="text-sky-700">{t("progress.tooltipReps", { value: point.maxReps })}</p>
             )}
         </div>
     )
@@ -76,6 +75,7 @@ function ProgressChart({ data, dataKey, name }) {
 }
 
 function ProgressView({ history }) {
+    const t = useT()
     const [selectedId, setSelectedId] = useState(null)
     const [metric, setMetric] = useState("oneRM")
     const [result, setResult] = useState(null)
@@ -116,7 +116,7 @@ function ProgressView({ history }) {
     if (trained.length === 0) {
         return (
             <section className="rounded-3xl border border-white/60 bg-white/60 p-6 text-sky-700 shadow-lg backdrop-blur-md">
-                Още няма записани тренировки. Завърши тренировка, за да можеш да следиш прогреса си.
+                {t("progress.empty")}
             </section>
         )
     }
@@ -135,14 +135,14 @@ function ProgressView({ history }) {
     const maxReps = Math.max(...chartData.map((point) => point.maxReps))
 
     const stats = [
-        { label: "Макс. тежест", value: `${maxWeight} кг` },
-        { label: "Най-добър 1RM", value: `≈ ${bestOneRM} кг` },
+        { label: t("progress.statMaxWeight"), value: t("progress.valueKg", { value: maxWeight }) },
+        { label: t("progress.statBestOneRM"), value: t("progress.valueKgApprox", { value: bestOneRM }) },
     ]
 
     return (
         <section className="rounded-3xl border border-white/60 bg-white/60 p-6 shadow-lg backdrop-blur-md">
             <div className="mb-4 flex items-center justify-between gap-3">
-                <h2 className="text-xl font-bold text-sky-900">Прогрес</h2>
+                <h2 className="text-xl font-bold text-sky-900">{t("progress.title")}</h2>
                 <div className="relative">
                     <select
                         value={activeId}
@@ -165,12 +165,12 @@ function ProgressView({ history }) {
             {error && <p className="mb-3 text-sm text-red-500">{error}</p>}
 
             {points === null && !error && (
-                <p className="py-6 text-center text-sm text-sky-600">Зареждане...</p>
+                <p className="py-6 text-center text-sm text-sky-600">{t("common.loading")}</p>
             )}
 
             {points !== null && points.length === 0 && (
                 <p className="py-6 text-center text-sm text-sky-600">
-                    Няма данни за това упражнение.
+                    {t("progress.noData")}
                 </p>
             )}
 
@@ -189,9 +189,8 @@ function ProgressView({ history }) {
                     </div>
 
                     <p className="mb-4 text-xs text-slate-500">
-                        <span className="font-semibold text-sky-700">1RM</span> (one-rep max) е
-                        най-голямата тежест, която можеш да вдигнеш за едно повторение. Тук е
-                        изчислена по формулата на Epley: <span className="font-semibold text-sky-700">тежест × (1 + повторения / 30).</span>
+                        <span className="font-semibold text-sky-700">1RM</span> {t("progress.oneRMText")}{" "}
+                        <span className="font-semibold text-sky-700">{t("progress.oneRMFormula")}</span>
                     </p>
 
                     <div className="mb-3 flex flex-wrap gap-2">
@@ -204,7 +203,7 @@ function ProgressView({ history }) {
                                     : "bg-white/80 text-sky-700 hover:bg-sky-100"
                                     }`}
                             >
-                                {item.label}
+                                {t(item.labelKey)}
                             </button>
                         ))}
                     </div>
@@ -212,7 +211,7 @@ function ProgressView({ history }) {
                     <ProgressChart
                         data={chartData}
                         dataKey={metric}
-                        name={activeMetric.label}
+                        name={t(activeMetric.labelKey)}
                     />
                 </>
             )}
@@ -220,19 +219,18 @@ function ProgressView({ history }) {
             {points !== null && points.length > 0 && !hasWeight && (
                 <>
                     <div className="mb-2 rounded-2xl bg-white/80 p-3 text-center shadow-sm">
-                        <p className="text-xs text-slate-500">Макс. повторения</p>
-                        <p className="mt-1 font-bold text-sky-800">{maxReps} повт.</p>
+                        <p className="text-xs text-slate-500">{t("progress.statMaxReps")}</p>
+                        <p className="mt-1 font-bold text-sky-800">{t("progress.valueReps", { value: maxReps })}</p>
                     </div>
 
                     <p className="mb-4 text-xs text-slate-500">
-                        Упражнението е без тежест, затова следим най-многото повторения в
-                        една серия от тренировка.
+                        {t("progress.noWeightText")}
                     </p>
 
                     <ProgressChart
                         data={chartData}
                         dataKey="maxReps"
-                        name="Макс. повторения"
+                        name={t("progress.metricMaxReps")}
                     />
                 </>
             )}

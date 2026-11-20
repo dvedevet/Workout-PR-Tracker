@@ -1,9 +1,10 @@
 import { supabase } from "./supabase"
+import { t } from "./i18n"
 
 const API_URL = (import.meta.env.VITE_API_URL ?? "").replace(/\/+$/, "")
 
 if (!API_URL) {
-    throw new Error("Липсва VITE_API_URL във frontend/.env")
+    throw new Error("Missing VITE_API_URL in frontend/.env")
 }
 
 export class ApiError extends Error { }
@@ -11,7 +12,7 @@ export class ApiError extends Error { }
 export function userMessage(err) {
     return err instanceof ApiError
         ? err.message
-        : "Нещо се обърка."
+        : t("errors.generic")
 }
 
 async function readError(response) {
@@ -20,7 +21,7 @@ async function readError(response) {
         if (typeof message === "string") return message
     } catch {
     }
-    return `Грешка от API: (${response.status}).`
+    return t("errors.api", { status: response.status })
 }
 
 async function request(path, options = {}) {
@@ -37,7 +38,7 @@ async function request(path, options = {}) {
 
     if (response.status === 401) {
         await supabase.auth.signOut()
-        throw new ApiError("Сесията ти изтече. Влез отново.")
+        throw new ApiError(t("errors.sessionExpired"))
     }
 
     if (!response.ok) {

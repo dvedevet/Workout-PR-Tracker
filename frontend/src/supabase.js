@@ -1,11 +1,12 @@
 import { createClient } from "@supabase/supabase-js"
+import { t } from "./i18n"
 
 const url = import.meta.env.VITE_SUPABASE_URL
 const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
 
 if (!url || !key) {
     throw new Error(
-        "Липсват VITE_SUPABASE_URL или VITE_SUPABASE_PUBLISHABLE_KEY във frontend/.env"
+        "Missing VITE_SUPABASE_URL or VITE_SUPABASE_PUBLISHABLE_KEY in frontend/.env"
     )
 }
 
@@ -23,21 +24,21 @@ export const signUpClient = createClient(url, key, {
 export function authMessage(error) {
     switch (error?.code) {
         case "invalid_credentials":
-            return "Грешен имейл или парола."
+            return t("auth.invalidCredentials")
         case "user_already_exists":
-            return "Вече има акаунт с този имейл."
+            return t("auth.userExists")
         case "weak_password":
-            return "Паролата е твърде слаба. Нужни са поне 8 символа, главна буква, малка буква и цифра."
+            return t("auth.weakPassword")
         case "email_not_confirmed":
-            return "Потвърди своя имейла чрез връзката, която ти изпратихме."
+            return t("auth.emailNotConfirmed")
         case "email_address_invalid":
-            return "Имейл адресът не е валиден."
+            return t("auth.invalidEmail")
         case "over_request_rate_limit":
         case "over_email_send_rate_limit":
-            return "Твърде много опити. Изчакай малко и опитай пак."
+            return t("auth.rateLimit")
         case "signup_disabled":
-            return "Регистрацията в момента е изключена."
+            return t("auth.signupDisabled")
         default:
-            return "Нещо се обърка. Провери връзката и опитай пак."
+            return t("auth.generic")
     }
 }
