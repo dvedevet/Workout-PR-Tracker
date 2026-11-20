@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { Plus } from "lucide-react"
-import { useT } from "../i18n"
+import { groupLabel, useT } from "../i18n"
 import { MUSCLE_GROUPS } from "../data/muscleGroups"
 import { userMessage } from "../api"
 
@@ -52,7 +52,7 @@ function NewExerciseForm({ name, onCreate }) {
                                 }`}
                         >
                             {isPrimary ? "★ " : ""}
-                            {group}
+                            {groupLabel(group)}
                         </button>
                     )
                 })}

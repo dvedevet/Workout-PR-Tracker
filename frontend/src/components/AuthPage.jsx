@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { LogIn, UserPlus, Eye, EyeOff } from "lucide-react"
 import { useT } from "../i18n"
+import LanguageSwitcher from "./LanguageSwitcher"
 import { supabase, signUpClient, authMessage } from "../supabase"
 import ErrorMessage from "./ErrorMessage"
 
@@ -103,6 +104,10 @@ function AuthPage() {
 
     return (
         <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-4 py-8">
+            <div className="mb-6 flex justify-center">
+                <LanguageSwitcher />
+            </div>
+
             <h1 className="mb-8 text-center text-4xl font-bold text-sky-900">
                 {t("auth.title")}
             </h1>
@@ -185,7 +190,7 @@ function AuthPage() {
                     className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-sky-500 px-4 py-3 text-base font-medium text-white shadow transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                     {isRegister ? <UserPlus size={20} /> : <LogIn size={20} />}
-                    {isBusy ? t("auth.pleaseWait") : isRegister ? t("auth.signUp") : t("auth.signIn")}
+                    {isBusy ? t("auth.pleaseWait") : isRegister ? t("auth.submitSignUp") : t("auth.submitSignIn")}
                 </button>
             </form>
 

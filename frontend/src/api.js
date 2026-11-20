@@ -1,5 +1,5 @@
 import { supabase } from "./supabase"
-import { t } from "./i18n"
+import { t, translateMessage } from "./i18n"
 
 const API_URL = (import.meta.env.VITE_API_URL ?? "").replace(/\/+$/, "")
 
@@ -18,7 +18,7 @@ export function userMessage(err) {
 async function readError(response) {
     try {
         const message = await response.json()
-        if (typeof message === "string") return message
+        if (typeof message === "string") return translateMessage(message)
     } catch {
     }
     return t("errors.api", { status: response.status })

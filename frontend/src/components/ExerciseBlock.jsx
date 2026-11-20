@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { ChevronDown, ChevronUp, Plus, Trash2, Trophy, X } from "lucide-react"
 import { isDecimalInput, parseDecimal } from "../utils/number"
-import { formatNumber, useT } from "../i18n"
+import { exerciseLabel, formatNumber, groupLabel, useT } from "../i18n"
 
 const prLabelKeys = { "1RM": "pr.oneRM", weight: "pr.weight", reps: "pr.reps" }
 
@@ -69,9 +69,9 @@ function ExerciseBlock({
             <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="font-semibold text-sky-900">{exercise.name}</h3>
+                        <h3 className="font-semibold text-sky-900">{exerciseLabel(exercise.name)}</h3>
                         <span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-700">
-                            {exercise.muscleGroups.join(" · ")}
+                            {exercise.muscleGroups.map(groupLabel).join(" · ")}
                         </span>
                     </div>
                     <p className="mt-1 text-xs text-slate-500">

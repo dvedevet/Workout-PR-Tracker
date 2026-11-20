@@ -15,6 +15,7 @@ import SessionBoard from "./components/SessionBoard"
 import HistoryView from "./components/HistoryView"
 import ProgressView from "./components/ProgressView"
 import ProfileView from "./components/ProfileView"
+import LanguageSwitcher from "./components/LanguageSwitcher"
 
 import {
   createExercise,
@@ -212,11 +213,16 @@ function App() {
   return (
     <div className="min-h-screen" onClick={handleBackgroundClick}>
       <div className="mx-auto max-w-5xl px-4 py-8">
-        <h1 className="mb-6 text-center text-3xl font-bold text-sky-900">
-          {view === "workout"
-            ? t("header.workout")
-            : t(tabs.find((tab) => tab.id === view).labelKey)}
-        </h1>
+        <div className="relative mb-6">
+          <h1 className="mb-3 text-center text-3xl font-bold text-sky-900 sm:mb-0">
+            {view === "workout"
+              ? t("header.workout")
+              : t(tabs.find((tab) => tab.id === view).labelKey)}
+          </h1>
+          <div className="flex justify-center sm:absolute sm:right-0 sm:top-1/2 sm:-translate-y-1/2">
+            <LanguageSwitcher />
+          </div>
+        </div>
 
         <nav className="mb-8 flex flex-wrap justify-center gap-2">
           {tabs.map((tab) => {

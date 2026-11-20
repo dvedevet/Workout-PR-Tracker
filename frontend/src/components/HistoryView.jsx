@@ -3,10 +3,10 @@ import { CalendarDays, Check, ChevronDown, Pencil, Trash2, X } from "lucide-reac
 import ConfirmDialog from "./ConfirmDialog"
 import ErrorMessage from "./ErrorMessage"
 import { userMessage } from "../api"
-import { formatDate, useT } from "../i18n"
+import { exerciseLabel, formatDate, groupLabel, useT } from "../i18n"
 
 function getAutoName(workout) {
-    const groups = workout.exercises.map((exercise) => exercise.muscleGroups[0])
+    const groups = workout.exercises.map((exercise) => groupLabel(exercise.muscleGroups[0]))
     return [...new Set(groups)].join(" + ")
 }
 
@@ -174,10 +174,10 @@ function HistoryView({ history, onRename, onDelete }) {
                                     <div key={exercise.exerciseId}>
                                         <div className="mb-2 flex flex-wrap items-center gap-2">
                                             <p className="font-semibold text-sky-800">
-                                                {exercise.name}
+                                                {exerciseLabel(exercise.name)}
                                             </p>
                                             <span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-700">
-                                                {exercise.muscleGroups.join(" · ")}
+                                                {exercise.muscleGroups.map(groupLabel).join(" · ")}
                                             </span>
                                         </div>
                                         <div className="flex flex-wrap gap-1.5 text-sm">

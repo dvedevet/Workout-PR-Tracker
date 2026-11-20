@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight, Search, X } from "lucide-react"
 import ExerciseCard from "./ExerciseCard"
 import NewExerciseForm from "./NewExerciseForm"
 import { MUSCLE_GROUPS } from "../data/muscleGroups"
-import { useT } from "../i18n"
+import { exerciseLabel, groupLabel, useT } from "../i18n"
 
 const ALL = "all"
 const groups = [ALL, ...MUSCLE_GROUPS]
@@ -42,7 +42,7 @@ function ExerciseList({
     let filteredExercises = exercises
     if (isSearching) {
         filteredExercises = exercises.filter((exercise) =>
-            exercise.name.toLowerCase().includes(normalizedQuery)
+            exerciseLabel(exercise.name).toLowerCase().includes(normalizedQuery)
         )
     } else if (activeGroup !== ALL) {
         filteredExercises = exercises.filter((exercise) =>
@@ -51,7 +51,7 @@ function ExerciseList({
     }
 
     const hasExactMatch = exercises.some(
-        (exercise) => exercise.name.toLowerCase() === normalizedQuery
+        (exercise) => exerciseLabel(exercise.name).toLowerCase() === normalizedQuery
     )
     const canCreate = isSearching && !hasExactMatch
 
@@ -116,7 +116,7 @@ function ExerciseList({
                                 : "bg-white/80 text-sky-700 hover:bg-sky-100"
                                 }`}
                         >
-                            {group === ALL ? t("exercises.all") : group}
+                            {group === ALL ? t("exercises.all") : groupLabel(group)}
                         </button>
                     ))}
                 </div>

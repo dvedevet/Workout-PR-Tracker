@@ -30,6 +30,8 @@ const en = {
     "auth.title": "Workout Log",
     "auth.signIn": "Sign in",
     "auth.signUp": "Sign up",
+    "auth.submitSignIn": "Sign in",
+    "auth.submitSignUp": "Sign up",
     "auth.name": "Name",
     "auth.email": "Email",
     "auth.password": "Password",

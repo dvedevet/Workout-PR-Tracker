@@ -1,4 +1,5 @@
 import { Dumbbell, Check } from "lucide-react"
+import { exerciseLabel, groupLabel } from "../i18n"
 
 function ExerciseCard({ name, muscleGroups, isSelected, onSelect }) {
     return (
@@ -13,8 +14,8 @@ function ExerciseCard({ name, muscleGroups, isSelected, onSelect }) {
                 {isSelected ? <Check size={20} /> : <Dumbbell size={20} />}
             </div>
             <div>
-                <h3 className="font-semibold text-slate-800">{name}</h3>
-                <p className="text-sm text-sky-600">{muscleGroups.join(" · ")}</p>
+                <h3 className="font-semibold text-slate-800">{exerciseLabel(name)}</h3>
+                <p className="text-sm text-sky-600">{muscleGroups.map(groupLabel).join(" · ")}</p>
             </div>
         </button>
     )

@@ -10,7 +10,7 @@ import {
     Tooltip,
 } from "recharts"
 import { getProgress, userMessage } from "../api"
-import { formatDate, useT } from "../i18n"
+import { exerciseLabel, formatDate, useT } from "../i18n"
 
 const metrics = [
     { id: "oneRM", labelKey: "progress.metricOneRM" },
@@ -151,7 +151,7 @@ function ProgressView({ history }) {
                     >
                         {trained.map((item) => (
                             <option key={item.exerciseId} value={item.exerciseId}>
-                                {item.name}
+                                {exerciseLabel(item.name)}
                             </option>
                         ))}
                     </select>

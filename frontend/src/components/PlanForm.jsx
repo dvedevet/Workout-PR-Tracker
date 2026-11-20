@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { ArrowDown, ArrowUp, X } from "lucide-react"
-import { useT } from "../i18n"
+import { exerciseLabel, groupLabel, useT } from "../i18n"
 import NewExerciseForm from "./NewExerciseForm"
 import { userMessage } from "../api"
 import { MUSCLE_GROUPS } from "../data/muscleGroups"
@@ -27,7 +27,7 @@ function PlanForm({ plan, exercises, onSave, onCancel, onCreateExercise }) {
     const available = exercises.filter(
         (exercise) =>
             !ids.includes(exercise.id) &&
-            exercise.name.toLowerCase().includes(normalizedQuery)
+            exerciseLabel(exercise.name).toLowerCase().includes(normalizedQuery)
     )
 
     const groupedAvailable = MUSCLE_GROUPS.map((group) => ({
@@ -36,7 +36,7 @@ function PlanForm({ plan, exercises, onSave, onCancel, onCreateExercise }) {
     })).filter((entry) => entry.items.length > 0)
 
     const exactMatch = exercises.find(
-        (exercise) => exercise.name.toLowerCase() === normalizedQuery
+        (exercise) => exerciseLabel(exercise.name).toLowerCase() === normalizedQuery
     )
     const canCreate = normalizedQuery !== "" && !exactMatch
     const alreadyAdded = exactMatch && ids.includes(exactMatch.id)
@@ -118,7 +118,7 @@ function PlanForm({ plan, exercises, onSave, onCancel, onCreateExercise }) {
                             >
                                 <span className="text-sm text-slate-800">
                                     <span className="mr-2 text-slate-400">{index + 1}.</span>
-                                    {exercise.name}
+                                    {exerciseLabel(exercise.name)}
                                 </span>
                                 <span className="flex shrink-0 items-center">
                                     <button
@@ -160,7 +160,7 @@ function PlanForm({ plan, exercises, onSave, onCancel, onCreateExercise }) {
 
             {alreadyAdded && (
                 <p className="mb-2 text-xs text-slate-500">
-                    {t("planForm.alreadyIn", { name: exactMatch.name })}
+                    {t("planForm.alreadyIn", { name: exerciseLabel(exactMatch.name) })}
                 </p>
             )}
 
@@ -169,7 +169,7 @@ function PlanForm({ plan, exercises, onSave, onCancel, onCreateExercise }) {
                     {groupedAvailable.map(({ group, items }) => (
                         <div key={group}>
                             <p className="px-3 pb-0.5 pt-2 text-xs font-semibold uppercase tracking-wide text-sky-600">
-                                {group}
+                                {groupLabel(group)}
                             </p>
                             <ul>
                                 {items.map((exercise) => (
@@ -178,10 +178,10 @@ function PlanForm({ plan, exercises, onSave, onCancel, onCreateExercise }) {
                                             onClick={() => addExercise(exercise.id)}
                                             className="flex w-full items-center justify-between gap-2 rounded-lg px-3 py-1.5 text-left text-sm transition hover:bg-sky-100"
                                         >
-                                            <span className="text-slate-800">{exercise.name}</span>
+                                            <span className="text-slate-800">{exerciseLabel(exercise.name)}</span>
                                             <span className="shrink-0 text-xs text-slate-400">
                                                 <span className="shrink-0 rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-700">
-                                                    {exercise.muscleGroups[0]}
+                                                    {groupLabel(exercise.muscleGroups[0])}
                                                 </span>
                                             </span>
                                         </button>
